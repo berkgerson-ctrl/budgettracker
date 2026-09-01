@@ -1,0 +1,61 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --outer: #DCDFEA;
+  --app: #F4F5FA;
+  --card: #FFFFFF;
+  --teal: #16B893;
+  --teal-deep: #0E9678;
+  --teal-tint: #E4F7F1;
+  --ink: #1C2430;
+  --ink-soft: #8891A0;
+  --ink-faint: #B7BECC;
+  --line: #EBEDF3;
+  --coral: #F0665A;
+  --coral-tint: #FDEBE9;
+  --amber: #E8A23A;
+  --amber-tint: #FBF1E1;
+  --violet: #7C6CF0;
+  --violet-tint: #EDEBFD;
+}
+
+* { font-family: 'Plus Jakarta Sans', sans-serif; font-feature-settings: "tnum" 1; }
+html, body { background: var(--outer); margin: 0; }
+#app { min-height: 100vh; }
+
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+.app-shell { background: var(--app); box-shadow: 0 30px 60px -20px rgba(20,30,60,0.25); }
+.card { background: var(--card); border: 1px solid var(--line); }
+.hidden-screen { display: none !important; }
+.pill { transition: all .18s ease; white-space: nowrap; }
+.nav-btn svg { width: 22px; height: 22px; }
+.nav-btn.active { color: var(--teal); }
+.nav-btn { color: var(--ink-faint); transition: color .15s ease; }
+
+input[type="number"], input[type="text"], input[type="date"], input[type="url"], select {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+}
+input[type="number"]::-webkit-inner-spin-button, input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+
+.field { background: var(--app); border: 1px solid var(--line); border-radius: 12px; }
+.field:focus-within { border-color: var(--teal); background: #fff; }
+.field input, .field select { background: transparent; outline: none; }
+
+.fab { box-shadow: 0 10px 24px -6px rgba(22,184,147,0.55); }
+.modal-overlay { background: rgba(20,26,38,0.45); }
+
+.row-enter { animation: rowIn .25s ease both; }
+@keyframes rowIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+
+.toast { transition: opacity .3s ease, transform .3s ease; }
+input:focus-visible, button:focus-visible, select:focus-visible { outline: 2px solid var(--teal); outline-offset: 2px; }
+
+.badge { font-size: 9px; padding: 2px 6px; border-radius: 9999px; display: inline-block; font-weight: 600; }
+
+@media (prefers-reduced-motion: reduce) { .row-enter { animation: none; } }
