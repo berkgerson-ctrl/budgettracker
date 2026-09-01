@@ -1,0 +1,19 @@
+{
+  "name": "Bütçe — Aylık Takip",
+  "short_name": "Bütçe",
+  "description": "Google Sheets ile senkronize, çok kullanıcılı aylık bütçe ve birikim takip uygulaması",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#DCDFEA",
+  "theme_color": "#16B893",
+  "lang": "tr",
+  "dir": "ltr",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-192-maskable.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "icons/icon-512-maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

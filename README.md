@@ -25,14 +25,23 @@ birikim takip uygulaması.
 - **Kategori bazlı bütçeleme** — Sabit gider ve ekstralara kategori atayın,
   limit belirleyin; Chart.js ile aylık gelir/gider çubuk grafiği ve kategori
   dağılım donut grafiği görün.
+- **Telefona yüklenebilir (PWA)** — GitHub Pages'e yayınladığınızda tarayıcı
+  "Ana ekrana ekle / Yükle" seçeneği sunar; uygulama diğer mağaza uygulamaları
+  gibi simgesiyle ana ekranda/app çekmecesinde görünür ve tam ekran açılır.
+- **Bootstrap Icons** — Tüm arayüz ikonları [icons.getbootstrap.com](https://icons.getbootstrap.com)
+  kaynaklı, MIT lisanslı SVG ikonlardır (`bootstrap-icons` paketi üzerinden).
 
 ## Proje Yapısı
 
 ```
 index.html
 vite.config.js
+public/
+  manifest.webmanifest    → PWA manifesti (ana ekrana ekleme)
+  sw.js                    → Service Worker (offline destek)
+  icons/                   → uygulama ikonları (192/512, maskable, apple-touch)
 src/
-  main.js                 → giriş noktası
+  main.js                 → giriş noktası + service worker kaydı
   state.js                → merkezi store, tüm hesaplamalar
   styles.css               → Tailwind + özel stiller
   services/
@@ -45,7 +54,7 @@ src/
     HomeScreen.js, ExpensesScreen.js, WealthScreen.js
     GoalsScreen.js, ChartScreen.js
     SettingsModal.js, QuickAddModal.js
-    icons.js
+    icons.js                → Bootstrap Icons tabanlı ikon seti
 google-apps-script/
   Code.gs                  → Apps Script backend kodu (Google'a elle yapıştırılır)
 .github/workflows/
@@ -108,7 +117,24 @@ npm run build
 `vite.config.js` içinde `base: './'` kullanıldığı için repo adı fark etmeksizin
 her alt-yolda doğru çalışır.
 
-## 4. Veri Modeli Notları
+## 4. Telefona Uygulama Olarak Yükleme (PWA)
+
+Site GitHub Pages'te (HTTPS) yayınlandıktan sonra:
+
+- **Android / Chrome**: Siteyi açın → sağ üstteki ⋮ menüsü → **"Uygulamayı yükle"**
+  ya da adres çubuğunda otomatik çıkan yükleme simgesine dokunun. Uygulama
+  simgesi (yeşil kumbara ikonu) ana ekrana ve uygulama çekmecesine eklenir,
+  tam ekran (adres çubuğusuz) açılır.
+- **iPhone / Safari**: Paylaş butonu → **"Ana Ekrana Ekle"**.
+- Uygulama bir [Web App Manifest](public/manifest.webmanifest) ve basit bir
+  [Service Worker](public/sw.js) (`stale-while-revalidate` stratejili, sadece
+  aynı kaynaktan gelen GET isteklerini önbekler — Google Sheets'e giden
+  isteklere hiç dokunmaz) içerir; bu ikisi olmadan tarayıcılar "yükle" seçeneğini
+  göstermez. İkon dosyaları `public/icons/` altındadır, isterseniz kendi
+  logonuzla değiştirebilirsiniz (aynı dosya adlarını ve boyutlarını koruyun:
+  192×192, 512×512, birer de "maskable" versiyon, 180×180 apple-touch-icon).
+
+## 5. Veri Modeli Notları
 
 - **Ana Varlık zinciri**: Her ay `Gelir − Sabit Gider − Ekstra − (Ortak Hesap + Harçlık)`
   formülüyle hesaplanır; bir önceki ayın bitiş bakiyesi üzerine eklenir.

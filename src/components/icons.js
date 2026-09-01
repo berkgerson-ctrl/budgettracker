@@ -1,30 +1,71 @@
+/**
+ * Bootstrap Icons (MIT lisanslı, https://icons.getbootstrap.com) üzerinden
+ * içe aktarılan SVG ikonlar. Vite'ın `?raw` özelliğiyle dosya içeriği build
+ * zamanında ham metin olarak alınır; genişlik/yükseklik öznitelikleri
+ * kaldırılarak uygulamanın kendi boyutlandırma (w-5 h-5 vb. sarmalayıcı)
+ * sistemiyle uyumlu hale getirilir.
+ */
+import houseDoorFill from 'bootstrap-icons/icons/house-door-fill.svg?raw';
+import receipt from 'bootstrap-icons/icons/receipt.svg?raw';
+import plusLg from 'bootstrap-icons/icons/plus-lg.svg?raw';
+import wallet2 from 'bootstrap-icons/icons/wallet2.svg?raw';
+import barChartFill from 'bootstrap-icons/icons/bar-chart-fill.svg?raw';
+import bullseye from 'bootstrap-icons/icons/bullseye.svg?raw';
+import gearFill from 'bootstrap-icons/icons/gear-fill.svg?raw';
+import cashCoin from 'bootstrap-icons/icons/cash-coin.svg?raw';
+import receiptCutoff from 'bootstrap-icons/icons/receipt-cutoff.svg?raw';
+import tagFill from 'bootstrap-icons/icons/tag-fill.svg?raw';
+import creditCardFill from 'bootstrap-icons/icons/credit-card-fill.svg?raw';
+import peopleFill from 'bootstrap-icons/icons/people-fill.svg?raw';
+import piggyBankFill from 'bootstrap-icons/icons/piggy-bank-fill.svg?raw';
+import trash3Fill from 'bootstrap-icons/icons/trash3-fill.svg?raw';
+import arrowUpRight from 'bootstrap-icons/icons/arrow-up-right.svg?raw';
+import arrowDownRight from 'bootstrap-icons/icons/arrow-down-right.svg?raw';
+import chevronDown from 'bootstrap-icons/icons/chevron-down.svg?raw';
+import pencilFill from 'bootstrap-icons/icons/pencil-fill.svg?raw';
+import xLg from 'bootstrap-icons/icons/x-lg.svg?raw';
+import link45deg from 'bootstrap-icons/icons/link-45deg.svg?raw';
+import checkLg from 'bootstrap-icons/icons/check-lg.svg?raw';
+import personCircle from 'bootstrap-icons/icons/person-circle.svg?raw';
+import arrowRepeat from 'bootstrap-icons/icons/arrow-repeat.svg?raw';
+import globeAmericas from 'bootstrap-icons/icons/globe-americas.svg?raw';
+import gripVertical from 'bootstrap-icons/icons/grip-vertical.svg?raw';
+import starFill from 'bootstrap-icons/icons/star-fill.svg?raw';
+import sliders from 'bootstrap-icons/icons/sliders.svg?raw';
+
+// Sabit width/height özniteliklerini kaldırır ki ikon, sarmalayıcı elemanın
+// (örn. w-5 h-5) boyutuna göre otomatik ölçeklensin.
+function clean(svg) {
+  return svg.replace(/\s(width|height)="[^"]*"/g, '');
+}
+
 export const ICON = {
-  home: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10v9a1 1 0 0 0 1 1H9.5a1 1 0 0 0 1-1v-4a1 1 0 0 1 1-1h1a1 1 0 0 1 1 1v4a1 1 0 0 0 1 1h3a1 1 0 0 0 1-1v-9"/></svg>',
-  list: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13"/><path d="M8 12h13"/><path d="M8 18h13"/><path d="M3 6h.01"/><path d="M3 12h.01"/><path d="M3 18h.01"/></svg>',
-  plus: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>',
-  wallet: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h13a1 1 0 0 1 1 1v3"/><path d="M3 7v10a2 2 0 0 0 2 2h14a1 1 0 0 0 1-1v-4"/><path d="M17 12h3a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1h-3a2 2 0 0 1 0-4Z"/></svg>',
-  chart: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10"/><path d="M12 20V4"/><path d="M20 20v-7"/></svg>',
-  target: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1" fill="currentColor" stroke="none"/></svg>',
-  settings: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M4 12h10M4 17h16"/></svg>',
-  income: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg>',
-  fixed: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13"/><path d="M8 12h13"/><path d="M8 18h13"/><path d="M3 6h.01"/><path d="M3 12h.01"/><path d="M3 18h.01"/></svg>',
-  extra: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41 12 22l-9-9V4a1 1 0 0 1 1-1h9l7.59 7.59a2 2 0 0 1 0 2.82Z"/><circle cx="7.5" cy="7.5" r="1.1" fill="currentColor" stroke="none"/></svg>',
-  pool: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18"/><circle cx="7" cy="14.5" r="1" fill="currentColor" stroke="none"/></svg>',
-  allowance: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3"/><path d="M2 20c0-3.3 3.1-6 7-6s7 2.7 7 6"/><circle cx="17.5" cy="8.5" r="2.3"/><path d="M15.3 6.3c1.1-.5 2.5-.5 3.6 0"/></svg>',
-  savings: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="8" width="14" height="12" rx="2"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/><path d="M9 13.5h6"/></svg>',
-  trash: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16"/><path d="M10 11v6M14 11v6"/><path d="M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12"/><path d="M9 7V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v3"/></svg>',
-  arrowUp: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7"/><path d="M9 7h8v8"/></svg>',
-  arrowDown: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7l10 10"/><path d="M17 7v8H9"/></svg>',
-  chevronDown: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>',
-  pencil: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>',
-  close: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18"/><path d="M6 6l12 12"/></svg>',
-  link: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 15 15 9"/><path d="M11 6h4a4 4 0 0 1 0 8h-1"/><path d="M13 18H9a4 4 0 0 1 0-8h1"/></svg>',
-  check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12l5 5L20 6"/></svg>',
-  user: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.4"/><path d="M4.5 20c1.4-3.6 4.2-5.5 7.5-5.5s6.1 1.9 7.5 5.5"/></svg>',
-  repeat: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 2l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><path d="M7 22l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>',
-  tag: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41 12 22l-9-9V4a1 1 0 0 1 1-1h9l7.59 7.59a2 2 0 0 1 0 2.82Z"/></svg>',
-  globe: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3a14 14 0 0 1 0 18a14 14 0 0 1 0-18Z"/></svg>',
-  gear: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z"/><path d="M19.4 13.5c.06-.5.06-1 0-1.5l1.6-1.2-1.5-2.6-1.9.6a7.7 7.7 0 0 0-1.3-.75L15.9 6h-3l-.4 2.05c-.46.19-.9.44-1.3.75l-1.9-.6-1.5 2.6 1.6 1.2c-.06.5-.06 1 0 1.5l-1.6 1.2 1.5 2.6 1.9-.6c.4.31.84.56 1.3.75L12.9 20h3l.4-2.05c.46-.19.9-.44 1.3-.75l1.9.6 1.5-2.6-1.6-1.2Z"/></svg>',
-  drag: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="6" r="1" fill="currentColor" stroke="none"/><circle cx="9" cy="12" r="1" fill="currentColor" stroke="none"/><circle cx="9" cy="18" r="1" fill="currentColor" stroke="none"/><circle cx="15" cy="6" r="1" fill="currentColor" stroke="none"/><circle cx="15" cy="12" r="1" fill="currentColor" stroke="none"/><circle cx="15" cy="18" r="1" fill="currentColor" stroke="none"/></svg>',
-  star: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3 2.6 5.9 6.4.6-4.8 4.3 1.4 6.3-5.6-3.3-5.6 3.3 1.4-6.3-4.8-4.3 6.4-.6Z"/></svg>'
+  home: clean(houseDoorFill),
+  list: clean(receipt),
+  plus: clean(plusLg),
+  wallet: clean(wallet2),
+  chart: clean(barChartFill),
+  target: clean(bullseye),
+  gear: clean(gearFill),
+  settings: clean(sliders),
+  income: clean(cashCoin),
+  fixed: clean(receiptCutoff),
+  extra: clean(tagFill),
+  pool: clean(creditCardFill),
+  allowance: clean(peopleFill),
+  savings: clean(piggyBankFill),
+  trash: clean(trash3Fill),
+  arrowUp: clean(arrowUpRight),
+  arrowDown: clean(arrowDownRight),
+  chevronDown: clean(chevronDown),
+  pencil: clean(pencilFill),
+  close: clean(xLg),
+  link: clean(link45deg),
+  check: clean(checkLg),
+  user: clean(personCircle),
+  repeat: clean(arrowRepeat),
+  tag: clean(tagFill),
+  globe: clean(globeAmericas),
+  drag: clean(gripVertical),
+  star: clean(starFill)
 };
