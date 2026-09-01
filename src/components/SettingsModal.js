@@ -39,18 +39,24 @@ function connectionSection(state) {
 }
 
 function usersSection(state) {
-  const rows = state.users.map(u => `
-    <div class="card rounded-xl p-3 flex items-center gap-2">
+  const firstActiveId = (state.users.find(u => u.active) || {}).id;
+  const rows = state.users.map(u => {
+    const isPrimary = u.active && u.id === firstActiveId;
+    return `
+    <div class="card rounded-xl p-3 flex items-center gap-2" data-user-row="${u.id}">
+      <span class="w-5 h-5 text-ink-faint shrink-0 cursor-grab" data-drag-handle aria-label="Sürükle">${ICON.drag}</span>
       <input type="text" data-role="userName" data-id="${u.id}" value="${escapeHtml(u.name)}" class="flex-1 min-w-0 text-sm font-semibold text-ink bg-transparent outline-none">
+      ${isPrimary ? `<span class="badge shrink-0 flex items-center gap-1" style="background:var(--amber-tint); color:var(--amber);"><span class="w-2.5 h-2.5 inline-flex">${ICON.star}</span>Ana</span>` : ''}
       <button data-action="toggleUserActive" data-id="${u.id}" class="badge shrink-0" style="background:${u.active ? 'var(--teal-tint)' : 'var(--ink-faint)'}; color:${u.active ? 'var(--teal-deep)' : '#fff'};">${u.active ? 'Aktif' : 'Pasif'}</button>
       <button data-action="removeUser" data-id="${u.id}" class="w-7 h-7 rounded-lg bg-coral-tint text-coral flex items-center justify-center shrink-0" aria-label="Sil">
         <span class="w-3.5 h-3.5 inline-flex">${ICON.close}</span>
       </button>
-    </div>`).join('');
+    </div>`;
+  }).join('');
   return `
     <p class="text-sm font-bold text-ink mb-1">Kullanıcılar</p>
-    <p class="text-xs text-ink-soft mb-3">Gelir, harçlık ve kişisel birikim bu listeye göre şekillenir.</p>
-    <div class="space-y-2 mb-3">${rows}</div>
+    <p class="text-xs text-ink-soft mb-3">Sürükle tutamacından sürükleyerek sırala — en üstteki aktif kullanıcı <b>ana kullanıcı</b> olur ve ana sayfa karşılamasında adı kullanılır.</p>
+    <div class="space-y-2 mb-3" id="userRowsList">${rows}</div>
     <div class="flex items-center gap-2">
       <div class="field flex-1 px-3 py-2.5"><input type="text" id="newUserName" placeholder="Yeni kullanıcı adı" class="w-full text-sm text-ink"></div>
       <button data-action="addUser" class="px-4 py-2.5 rounded-xl text-white text-xs font-semibold bg-teal shrink-0">Ekle</button>

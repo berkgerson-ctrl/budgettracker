@@ -59,6 +59,14 @@ export function saveGoalContribution(url, contribution) {
   return callApi(url, 'saveGoalContribution', contribution);
 }
 
+export function updateGoalContribution(url, contribution) {
+  return callApi(url, 'updateGoalContribution', contribution);
+}
+
+export function deleteGoalContribution(url, id) {
+  return callApi(url, 'deleteGoalContribution', { id });
+}
+
 export function saveSettings(url, settings) {
   return callApi(url, 'saveSettings', { settings });
 }

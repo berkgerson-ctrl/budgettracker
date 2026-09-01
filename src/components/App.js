@@ -10,11 +10,9 @@ import { renderChartScreen, mountCharts } from './ChartScreen.js';
 import { renderSettingsModal } from './SettingsModal.js';
 import { renderQuickAddModal } from './QuickAddModal.js';
 
-const NAV_ITEMS_LEFT = [
+const NAV_ITEMS = [
   { tab: 'home', icon: ICON.home, label: 'Ana sayfa' },
-  { tab: 'expenses', icon: ICON.list, label: 'Giderler' }
-];
-const NAV_ITEMS_RIGHT = [
+  { tab: 'expenses', icon: ICON.list, label: 'Giderler' },
   { tab: 'goals', icon: ICON.target, label: 'Hedefler' },
   { tab: 'wealth', icon: ICON.wallet, label: 'Varlık' },
   { tab: 'chart', icon: ICON.chart, label: 'Grafik' }
@@ -26,12 +24,8 @@ function bottomNav(state) {
       ${item.icon}
     </button>`;
   return `
-    <div class="absolute bottom-0 inset-x-0 px-4 pb-5 pt-3 bg-white rounded-t-[1.75rem] border-t border-line flex items-center justify-between">
-      ${NAV_ITEMS_LEFT.map(navBtn).join('')}
-      <button data-action="openAddExtra" class="fab -mt-9 w-14 h-14 rounded-full flex items-center justify-center text-white shrink-0 bg-teal" aria-label="Ekstra masraf ekle">
-        ${ICON.plus}
-      </button>
-      ${NAV_ITEMS_RIGHT.map(navBtn).join('')}
+    <div class="absolute bottom-0 inset-x-0 px-4 pb-5 pt-3 bg-white rounded-t-[1.75rem] border-t border-line flex items-center justify-around">
+      ${NAV_ITEMS.map(navBtn).join('')}
     </div>`;
 }
 
@@ -46,7 +40,7 @@ function fullMarkup(state) {
   return `
     <div class="min-h-screen w-full flex items-start sm:items-center justify-center py-0 sm:py-8 px-0 sm:px-4">
       <div id="appShell" class="app-shell relative w-full sm:max-w-[420px] sm:rounded-[2.25rem] overflow-hidden flex flex-col" style="min-height:100dvh;">
-        ${renderHeader()}
+        ${renderHeader(state)}
         ${renderMonthPills(state)}
         <div class="flex-1 overflow-y-auto px-5 pb-32" id="scrollArea">
           <div id="screenHome" class="${state.ui.activeTab === 'home' ? '' : 'hidden-screen'}">${renderHomeScreen(state)}</div>
@@ -104,6 +98,8 @@ export function mountApp(root) {
       requestAnimationFrame(() => mountCharts(store.data));
     }
 
+    setupUserDragDrop();
+
     if (sel) {
       const el = document.querySelector(sel);
       if (el) {
@@ -138,6 +134,7 @@ export function mountApp(root) {
       case 'birikim': store.updateMonth(m => { m.birikim = Number(val) || 0; }); break;
       case 'allowance': store.updateMonth(m => { m.allowance[t.dataset.user] = Number(val) || 0; }); break;
       case 'personalNote': store.updateMonth(m => { m.personalNote[t.dataset.user] = Number(val) || 0; }); break;
+      case 'goalContribAmount': store.updateGoalContribution(t.dataset.id, val); break;
       case 'personalSavingsAmount': store.updateMonth(m => {
           if (!m.personalSavings[t.dataset.user]) m.personalSavings[t.dataset.user] = { amount: 0, redirectToJoint: false };
           m.personalSavings[t.dataset.user].amount = Number(val) || 0;
@@ -268,6 +265,9 @@ export function mountApp(root) {
         if (amount > 0) { store.addGoalContribution(btn.dataset.id, amount); showToast('Hedefe eklendi'); input.value = ''; }
         break;
       }
+      case 'deleteGoalContribution':
+        if (confirm('Bu katkı silinecek. Emin misiniz?')) store.removeGoalContribution(btn.dataset.id);
+        break;
       default: break;
     }
   });
@@ -279,6 +279,60 @@ export function mountApp(root) {
 
 function openModal(id) { store.openModalUI(id); }
 function closeModal() { store.closeModalUI(); }
+
+/* ---------------- Kullanıcı listesi sürükle-bırak (pointer tabanlı, dokunmatik uyumlu) ---------------- */
+function setupUserDragDrop() {
+  const list = document.getElementById('userRowsList');
+  if (!list) return;
+
+  list.querySelectorAll('[data-drag-handle]').forEach(handle => {
+    handle.addEventListener('pointerdown', function (e) {
+      e.preventDefault();
+      const row = handle.closest('[data-user-row]');
+      if (!row) return;
+      let startY = e.clientY;
+      row.style.position = 'relative';
+      row.style.zIndex = '10';
+      row.style.boxShadow = '0 10px 24px rgba(20,30,60,0.18)';
+
+      function onMove(ev) {
+        const dy = ev.clientY - startY;
+        row.style.transform = `translateY(${dy}px)`;
+        const rows = Array.from(list.children);
+        const dragIndex = rows.indexOf(row);
+        const dragRect = row.getBoundingClientRect();
+        const dragMid = dragRect.top + dragRect.height / 2;
+        rows.forEach((sibling, i) => {
+          if (sibling === row) return;
+          const rect = sibling.getBoundingClientRect();
+          const mid = rect.top + rect.height / 2;
+          if (i < dragIndex && dragMid < mid) {
+            list.insertBefore(row, sibling);
+            row.style.transform = 'translateY(0px)';
+            startY = ev.clientY;
+          } else if (i > dragIndex && dragMid > mid) {
+            list.insertBefore(row, sibling.nextSibling);
+            row.style.transform = 'translateY(0px)';
+            startY = ev.clientY;
+          }
+        });
+      }
+
+      function onUp() {
+        document.removeEventListener('pointermove', onMove);
+        document.removeEventListener('pointerup', onUp);
+        row.style.transform = '';
+        row.style.zIndex = '';
+        row.style.boxShadow = '';
+        const orderedIds = Array.from(list.children).map(r => r.dataset.userRow);
+        store.reorderUsersByIds(orderedIds);
+      }
+
+      document.addEventListener('pointermove', onMove);
+      document.addEventListener('pointerup', onUp);
+    });
+  });
+}
 
 function loadSampleData() {
   const users = store.data.users;

@@ -52,31 +52,13 @@ export function renderExpensesScreen(state) {
     ? `<p class="text-xs text-ink-faint italic">Bu ay için ekstra masraf eklenmedi.</p>`
     : m.extras.map(i => lineItemRow(i, 'extra', state)).join('');
 
-  const allowanceRows = users.map(u => {
+  const personalSavingsRows = users.map(u => {
     const ps = m.personalSavings[u.id] || { amount: 0, redirectToJoint: false };
     return `
       <div class="pb-3 mb-3 border-b border-line last:border-b-0 last:pb-0 last:mb-0">
-        <p class="text-xs font-bold text-ink mb-2">${escapeHtml(u.name)}</p>
-        <div class="flex items-center justify-between gap-3 mb-2">
-          <label class="text-sm text-ink-soft">Harçlık</label>
-          <div class="field flex items-center gap-1 px-3 py-2 w-32">
-            <span class="text-ink-soft text-xs">${sym}</span>
-            <input type="number" step="0.01" min="0" data-role="allowance" data-user="${u.id}" value="${m.allowance[u.id] || 0}" class="w-full text-right text-sm text-ink">
-          </div>
-        </div>
-        <div class="flex items-center justify-between gap-3 mb-2">
-          <div>
-            <label class="text-sm text-ink-soft block">Limit (not)</label>
-            <span class="text-[10px] text-ink-faint">Harcarken durman gereken tutar</span>
-          </div>
-          <div class="field flex items-center gap-1 px-3 py-2 w-32 shrink-0">
-            <span class="text-ink-soft text-xs">${sym}</span>
-            <input type="number" step="0.01" data-role="personalNote" data-user="${u.id}" value="${m.personalNote[u.id] || 0}" class="w-full text-right text-sm text-ink">
-          </div>
-        </div>
         <div class="flex items-center justify-between gap-3">
           <div>
-            <label class="text-sm text-ink-soft block">Kişisel Birikim</label>
+            <label class="text-sm text-ink-soft block">${escapeHtml(u.name)} Kişisel Birikim</label>
             <button data-action="toggleRedirect" data-user="${u.id}" class="flex items-center gap-1 text-[10px] mt-0.5 ${ps.redirectToJoint ? 'text-teal-deep font-semibold' : 'text-ink-faint'}">
               <span class="w-3 h-3 inline-flex rounded-full border ${ps.redirectToJoint ? 'bg-teal border-teal' : 'border-ink-faint'}"></span>
               Ortak hesaba yönlendir
@@ -89,6 +71,28 @@ export function renderExpensesScreen(state) {
         </div>
       </div>`;
   }).join('');
+
+  const allowanceRows = users.map(u => `
+      <div class="pb-3 mb-3 border-b border-line last:border-b-0 last:pb-0 last:mb-0">
+        <p class="text-xs font-bold text-ink mb-2">${escapeHtml(u.name)}</p>
+        <div class="flex items-center justify-between gap-3 mb-2">
+          <label class="text-sm text-ink-soft">Harçlık</label>
+          <div class="field flex items-center gap-1 px-3 py-2 w-32">
+            <span class="text-ink-soft text-xs">${sym}</span>
+            <input type="number" step="0.01" min="0" data-role="allowance" data-user="${u.id}" value="${m.allowance[u.id] || 0}" class="w-full text-right text-sm text-ink">
+          </div>
+        </div>
+        <div class="flex items-center justify-between gap-3">
+          <div>
+            <label class="text-sm text-ink-soft block">Limit (not)</label>
+            <span class="text-[10px] text-ink-faint">Harcarken durman gereken tutar</span>
+          </div>
+          <div class="field flex items-center gap-1 px-3 py-2 w-32 shrink-0">
+            <span class="text-ink-soft text-xs">${sym}</span>
+            <input type="number" step="0.01" data-role="personalNote" data-user="${u.id}" value="${m.personalNote[u.id] || 0}" class="w-full text-right text-sm text-ink">
+          </div>
+        </div>
+      </div>`).join('');
 
   return `
     <div class="pt-2 pb-1">
@@ -145,7 +149,9 @@ export function renderExpensesScreen(state) {
     </div>
 
     <div class="card rounded-2xl p-4 mt-4">
-      <div class="flex items-center justify-between gap-3">
+      <h3 class="font-bold text-sm text-ink mb-1">Birikim</h3>
+      <p class="text-[11px] text-ink-faint leading-snug mb-3">Gider gibi görünür, ancak toplam varlığınızdan düşülmez — kendi birikim katmanına eklenmiş sayılır.</p>
+      <div class="flex items-center justify-between gap-3 pb-3 mb-3 border-b border-line">
         <div>
           <label class="text-sm text-ink-soft block mb-1">Ortak Birikim</label>
           <span class="badge" style="background:var(--teal-tint); color:var(--teal-deep);">+ Toplam Varlığa</span>
@@ -155,14 +161,14 @@ export function renderExpensesScreen(state) {
           <input type="number" step="0.01" min="0" data-role="birikim" value="${m.birikim}" class="w-full text-right text-sm text-ink">
         </div>
       </div>
-      <p class="text-[10px] text-ink-faint leading-snug mt-2.5">Gider gibi görünür, ancak toplam varlığınızdan düşülmez — Ortak Birikim katmanına eklenmiş sayılır.</p>
+      ${personalSavingsRows}
     </div>
 
     <div class="card rounded-2xl p-4 mt-4 mb-4">
       <h3 class="font-bold text-sm text-ink mb-3">Harçlık &amp; Ortak Havuz</h3>
       <div class="flex items-center justify-between gap-3 mb-2">
         <div>
-          <label class="text-sm text-ink-soft block mb-1">Ortak Hesap</label>
+          <label class="text-sm text-ink-soft block mb-1">Ortak Hesaptan Harcanan</label>
           <span class="badge" style="background:var(--coral-tint); color:var(--coral);">− Toplam Varlıktan</span>
         </div>
         <div class="field flex items-center gap-1 px-3 py-2 w-32 shrink-0">
@@ -170,7 +176,7 @@ export function renderExpensesScreen(state) {
           <input type="number" step="0.01" min="0" data-role="pool" value="${m.pool}" class="w-full text-right text-sm text-ink">
         </div>
       </div>
-      <p class="text-[10px] text-ink-faint leading-snug mb-3 pb-3 border-b border-line">Ortak hesap aynı zamanda birikim hesabınız olduğu için buraya ayrılan tutar aylık toplam varlığınızdan düşülür.</p>
+      <p class="text-[10px] text-ink-faint leading-snug mb-3 pb-3 border-b border-line">Ortak hesap aynı zamanda birikim hesabınız olduğu için buradan harcanan tutar aylık toplam varlığınızdan düşülür.</p>
       ${allowanceRows}
       <div class="flex items-center justify-between mt-3 pt-3 border-t border-line">
         <span class="text-xs font-semibold text-ink-soft">Toplam (Havuz + Harçlık)</span>

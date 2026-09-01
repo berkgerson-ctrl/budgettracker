@@ -51,6 +51,12 @@ function doPost(e) {
       case 'saveGoalContribution':
         result = saveGoalContribution(payload);
         break;
+      case 'updateGoalContribution':
+        result = updateGoalContributionRow(payload);
+        break;
+      case 'deleteGoalContribution':
+        result = deleteGoalContributionRow(payload);
+        break;
       case 'saveSettings':
         result = saveSettings(payload.settings);
         break;
@@ -168,6 +174,30 @@ function saveGoalContribution(payload) {
   const sh = getOrCreateSheet(SHEETS.GOAL_CONTRIBUTIONS, ['id', 'goalId', 'monthKey', 'amount', 'date']);
   sh.appendRow([payload.id, payload.goalId, payload.monthKey, payload.amount, new Date().toISOString()]);
   return { saved: true };
+}
+
+function updateGoalContributionRow(payload) {
+  const sh = getOrCreateSheet(SHEETS.GOAL_CONTRIBUTIONS, ['id', 'goalId', 'monthKey', 'amount', 'date']);
+  const values = sh.getDataRange().getValues();
+  for (let i = 1; i < values.length; i++) {
+    if (values[i][0] === payload.id) {
+      sh.getRange(i + 1, 4).setValue(payload.amount); // "amount" sütunu
+      return { saved: true };
+    }
+  }
+  return { saved: false, error: 'Kayıt bulunamadı' };
+}
+
+function deleteGoalContributionRow(payload) {
+  const sh = getOrCreateSheet(SHEETS.GOAL_CONTRIBUTIONS, ['id', 'goalId', 'monthKey', 'amount', 'date']);
+  const values = sh.getDataRange().getValues();
+  for (let i = 1; i < values.length; i++) {
+    if (values[i][0] === payload.id) {
+      sh.deleteRow(i + 1);
+      return { deleted: true };
+    }
+  }
+  return { deleted: false };
 }
 
 function readGoalContributions() {

@@ -3,6 +3,20 @@ import { formatCurrency, currencySymbol, escapeHtml } from '../utils/format.js';
 import { formatDateTR } from '../utils/dates.js';
 import { goalCurrentAmount, goalProgressPct, goalMonthsToComplete, goalRequiredMonthly } from '../state.js';
 
+function contributionRow(c, currency) {
+  return `
+    <div class="flex items-center gap-2 row-enter">
+      <span class="text-[11px] text-ink-faint flex-1 min-w-0">${formatDateTR(c.date)}</span>
+      <div class="field flex items-center gap-1 px-2 py-1.5 w-24 shrink-0">
+        <span class="text-ink-soft text-xs">${currencySymbol(currency)}</span>
+        <input type="number" step="0.01" min="0" data-role="goalContribAmount" data-id="${c.id}" value="${c.amount}" class="w-full text-right text-xs text-ink">
+      </div>
+      <button data-action="deleteGoalContribution" data-id="${c.id}" class="w-6 h-6 rounded-md bg-coral-tint text-coral flex items-center justify-center shrink-0" aria-label="Sil">
+        <span class="w-3 h-3 inline-flex">${ICON.close}</span>
+      </button>
+    </div>`;
+}
+
 function goalCard(state, goal) {
   const currency = state.settings.currency;
   const current = goalCurrentAmount(goal.id, state.goalContributions);
@@ -10,6 +24,9 @@ function goalCard(state, goal) {
   const monthsLeft = goalMonthsToComplete(goal, current);
   const requiredMonthly = goalRequiredMonthly(goal, current);
   const remaining = Math.max(0, goal.targetAmount - current);
+  const contributions = state.goalContributions
+    .filter(c => c.goalId === goal.id)
+    .sort((a, b) => new Date(b.date) - new Date(a.date));
 
   let simulationText = '';
   if (goal.monthlyContribution > 0) {
@@ -53,6 +70,11 @@ function goalCard(state, goal) {
         </div>
         <button data-action="addGoalContribution" data-id="${goal.id}" class="px-4 py-2 rounded-xl text-white text-xs font-semibold bg-teal shrink-0">Ekle</button>
       </div>
+      ${contributions.length ? `
+      <div class="mt-3 pt-3 border-t border-line">
+        <p class="text-[10px] font-semibold text-ink-faint uppercase tracking-wide mb-2">Katkı Geçmişi <span class="font-normal normal-case text-ink-faint">— düzenlenebilir / silinebilir</span></p>
+        <div class="space-y-1.5">${contributions.map(c => contributionRow(c, currency)).join('')}</div>
+      </div>` : ''}
     </div>`;
 }
 

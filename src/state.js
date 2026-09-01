@@ -259,6 +259,8 @@ class Store {
   pushRecurring() { return this._push(() => api.saveRecurring(this.data.connection.url, this.data.recurringTemplates)); }
   pushCategories() { return this._push(() => api.saveCategories(this.data.connection.url, this.data.categories)); }
   pushGoalContribution(contribution) { return this._push(() => api.saveGoalContribution(this.data.connection.url, contribution)); }
+  pushGoalContributionUpdate(contribution) { return this._push(() => api.updateGoalContribution(this.data.connection.url, contribution)); }
+  pushGoalContributionDelete(id) { return this._push(() => api.deleteGoalContribution(this.data.connection.url, id)); }
 
   /* ----- Ay yönetimi ----- */
   selectMonth(key) {
@@ -332,6 +334,14 @@ class Store {
   toggleUserRedirect(id) {
     const u = this.data.users.find(x => x.id === id);
     if (u) { u.redirectToJoint = !u.redirectToJoint; this.emit(); this.pushUsers(); }
+  }
+  reorderUsersByIds(orderedIds) {
+    const map = new Map(this.data.users.map(u => [u.id, u]));
+    const newList = orderedIds.map(id => map.get(id)).filter(Boolean);
+    this.data.users.forEach(u => { if (!orderedIds.includes(u.id)) newList.push(u); });
+    this.data.users = newList;
+    this.emit();
+    this.pushUsers();
   }
 
   /* ----- Varlık zincirleri ----- */
@@ -440,6 +450,18 @@ Object.assign(Store.prototype, {
     this.data.goalContributions.push(contribution);
     this.emit();
     this.pushGoalContribution(contribution);
+  },
+  updateGoalContribution(id, amount) {
+    const c = this.data.goalContributions.find(x => x.id === id);
+    if (!c) return;
+    c.amount = Number(amount) || 0;
+    this.emit();
+    debounced('goalContrib-' + id, () => this.pushGoalContributionUpdate(c));
+  },
+  removeGoalContribution(id) {
+    this.data.goalContributions = this.data.goalContributions.filter(c => c.id !== id);
+    this.emit();
+    this.pushGoalContributionDelete(id);
   }
 });
 

@@ -41,7 +41,7 @@ export function renderHomeScreen(state) {
   const extrasDetail = m.extras.length === 0
     ? `<p class="text-xs text-ink-faint italic py-1">Bu ay için ekstra masraf eklenmedi.</p>`
     : m.extras.map(i => detailLine(i.name || 'Ekstra', i.amount, currency)).join('');
-  const poolDetail = detailLine('Ortak Hesap', m.pool, currency) + `<p class="text-[10px] text-ink-faint leading-snug pt-1">Ortak hesap birikim hesabınız olduğundan bu tutar toplam varlığınızdan düşülür.</p>`;
+  const poolDetail = detailLine('Ortak Hesaptan Harcanan', m.pool, currency) + `<p class="text-[10px] text-ink-faint leading-snug pt-1">Ortak hesap birikim hesabınız olduğundan bu tutar toplam varlığınızdan düşülür.</p>`;
   const birikimDetail = detailLine('Ortak Birikim', m.birikim, currency) + `<p class="text-[10px] text-ink-faint leading-snug pt-1">Gider gibi görünür, ancak toplam varlığınızdan düşülmez — Ortak Birikim katmanına eklenir.</p>`;
   const allowanceDetail = users.map(u => detailLine(`${u.name} Harçlık`, m.allowance[u.id] || 0, currency)).join('')
     + users.map(u => `<div class="flex items-center justify-between py-1"><span class="text-xs text-ink-soft">${u.name} Limit (not)</span><span class="text-xs font-semibold text-ink">${formatCurrency(m.personalNote[u.id] || 0, currency)}</span></div>`).join('');
@@ -107,7 +107,7 @@ export function renderHomeScreen(state) {
         ${accordionRow(state, 'extras', ICON.extra, 'var(--coral-tint)', 'var(--coral)', 'Ekstralar', m.extras.length + ' kalem', t.totalExtras, true, extrasDetail)}
         ${accordionRow(state, 'birikim', ICON.savings, 'var(--teal-tint)', 'var(--teal-deep)', 'Ortak Birikim', 'Toplam varlığa eklenir', m.birikim, true, birikimDetail)}
         ${userRows}
-        ${accordionRow(state, 'pool', ICON.pool, 'var(--coral-tint)', 'var(--coral)', 'Ortak Hesap', 'Toplam varlıktan düşülür', m.pool, true, poolDetail)}
+        ${accordionRow(state, 'pool', ICON.pool, 'var(--coral-tint)', 'var(--coral)', 'Ortak Hesaptan Harcanan', 'Toplam varlıktan düşülür', m.pool, true, poolDetail)}
         ${accordionRow(state, 'allowance', ICON.allowance, 'var(--teal-tint)', 'var(--teal-deep)', 'Harçlıklar', users.map(u => u.name).join(' + '), t.totalAllowance, true, allowanceDetail)}
       </div>
     </div>
