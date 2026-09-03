@@ -13,7 +13,7 @@ export function renderHeader(state) {
         <p class="font-extrabold text-lg text-ink leading-tight truncate">${greeting}</p>
       </div>
       <button data-action="openSettings" class="w-10 h-10 rounded-xl bg-white border border-line flex items-center justify-center text-ink shrink-0" aria-label="Ayarlar">
-        ${ICON.gear}
+        <span class="w-5 h-5 inline-flex">${ICON.gear}</span>
       </button>
     </div>`;
 }

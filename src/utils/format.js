@@ -22,3 +22,10 @@ export function formatCurrency(amount, currency = 'EUR') {
 export function escapeHtml(s) {
   return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
+
+// Değeri 0/null/undefined olan sayı alanlarını input'ta boş göstermek için
+// kullanılır — kullanıcı hiç veri girmediyse kutu boş kalır (placeholder "0"
+// görünür), gerçekten "0" yazmışsa yine de kaydedilen veri 0'dır.
+export function numOrEmpty(n) {
+  return (n === 0 || n === null || n === undefined || Number.isNaN(n)) ? '' : n;
+}

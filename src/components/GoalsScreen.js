@@ -1,5 +1,5 @@
 import { ICON } from './icons.js';
-import { formatCurrency, currencySymbol, escapeHtml } from '../utils/format.js';
+import { formatCurrency, currencySymbol, escapeHtml, numOrEmpty } from '../utils/format.js';
 import { formatDateTR } from '../utils/dates.js';
 import { goalCurrentAmount, goalProgressPct, goalMonthsToComplete, goalRequiredMonthly } from '../state.js';
 
@@ -9,7 +9,7 @@ function contributionRow(c, currency) {
       <span class="text-[11px] text-ink-faint flex-1 min-w-0">${formatDateTR(c.date)}</span>
       <div class="field flex items-center gap-1 px-2 py-1.5 w-24 shrink-0">
         <span class="text-ink-soft text-xs">${currencySymbol(currency)}</span>
-        <input type="number" step="0.01" min="0" data-role="goalContribAmount" data-id="${c.id}" value="${c.amount}" class="w-full text-right text-xs text-ink">
+        <input type="number" step="0.01" min="0" data-role="goalContribAmount" data-id="${c.id}" value="${numOrEmpty(c.amount)}" placeholder="0" class="w-full text-right text-xs text-ink">
       </div>
       <button data-action="deleteGoalContribution" data-id="${c.id}" class="w-6 h-6 rounded-md bg-coral-tint text-coral flex items-center justify-center shrink-0" aria-label="Sil">
         <span class="w-3 h-3 inline-flex">${ICON.close}</span>
@@ -45,7 +45,7 @@ function goalCard(state, goal) {
     <div class="card rounded-2xl p-4 row-enter">
       <div class="flex items-start justify-between gap-3 mb-3">
         <div class="flex items-center gap-3 min-w-0">
-          <span class="w-11 h-11 rounded-full flex items-center justify-center shrink-0" style="background:var(--amber-tint); color:var(--amber);">${ICON.target}</span>
+          <span class="w-11 h-11 rounded-full flex items-center justify-center shrink-0" style="background:var(--amber-tint); color:var(--amber);"><span class="w-5 h-5 inline-flex">${ICON.target}</span></span>
           <div class="min-w-0">
             <p class="font-bold text-sm text-ink truncate">${escapeHtml(goal.name)}</p>
             <p class="text-[11px] text-ink-faint">${formatCurrency(current, currency)} / ${formatCurrency(goal.targetAmount, currency)}</p>

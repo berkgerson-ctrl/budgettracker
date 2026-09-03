@@ -10,6 +10,6 @@ export function renderMonthPills(state) {
   return `
     <div id="monthPills" class="flex gap-2 px-5 pb-4 overflow-x-auto no-scrollbar shrink-0">
       ${pills}
-      <button data-action="addMonth" class="pill row-enter w-9 h-9 rounded-full bg-white border border-dashed border-ink-faint flex items-center justify-center text-ink-soft shrink-0" aria-label="Yeni ay ekle">${ICON.plus}</button>
+      <button data-action="addMonth" class="pill row-enter w-9 h-9 rounded-full bg-white border border-dashed border-ink-faint flex items-center justify-center text-ink-soft shrink-0" aria-label="Yeni ay ekle"><span class="w-4 h-4 inline-flex">${ICON.plus}</span></button>
     </div>`;
 }

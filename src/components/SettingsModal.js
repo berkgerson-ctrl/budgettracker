@@ -1,5 +1,5 @@
 import { ICON } from './icons.js';
-import { CURRENCIES, escapeHtml, formatCurrency } from '../utils/format.js';
+import { CURRENCIES, escapeHtml, formatCurrency, numOrEmpty } from '../utils/format.js';
 
 function connectionSection(state) {
   const c = state.connection;
@@ -92,7 +92,7 @@ function recurringSection(state) {
     <div class="card rounded-xl p-3 flex items-center gap-2">
       <input type="text" data-role="templateName" data-id="${t.id}" value="${escapeHtml(t.name)}" class="flex-1 min-w-0 text-sm font-semibold text-ink bg-transparent outline-none">
       <div class="field flex items-center gap-1 px-2 py-1.5 w-24 shrink-0">
-        <input type="number" step="0.01" data-role="templateAmount" data-id="${t.id}" value="${t.amount}" class="w-full text-right text-xs text-ink">
+        <input type="number" step="0.01" data-role="templateAmount" data-id="${t.id}" value="${numOrEmpty(t.amount)}" placeholder="0" class="w-full text-right text-xs text-ink">
       </div>
       <button data-action="toggleTemplateActive" data-id="${t.id}" class="badge shrink-0" style="background:${t.active ? 'var(--teal-tint)' : 'var(--ink-faint)'}; color:${t.active ? 'var(--teal-deep)' : '#fff'};">${t.active ? 'Aktif' : 'Pasif'}</button>
       <button data-action="removeTemplate" data-id="${t.id}" class="w-7 h-7 rounded-lg bg-coral-tint text-coral flex items-center justify-center shrink-0" aria-label="Sil">

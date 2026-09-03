@@ -59,7 +59,7 @@ export function renderHomeScreen(state) {
     const pct = Math.round(goalProgressPct(g, cur));
     return `
       <button data-tab="goals" class="w-full text-left card rounded-xl p-3 flex items-center gap-3">
-        <span class="w-10 h-10 rounded-full flex items-center justify-center shrink-0" style="background:var(--amber-tint); color:var(--amber);">${ICON.target}</span>
+        <span class="w-10 h-10 rounded-full flex items-center justify-center shrink-0" style="background:var(--amber-tint); color:var(--amber);"><span class="w-5 h-5 inline-flex">${ICON.target}</span></span>
         <span class="flex-1 min-w-0">
           <span class="block text-sm font-semibold text-ink truncate">${g.name}</span>
           <span class="block text-[11px] text-ink-faint">%${pct} tamamlandı</span>
@@ -95,7 +95,7 @@ export function renderHomeScreen(state) {
 
     ${!state.connection.demoMode ? '' : `
     <div class="mt-4 card rounded-xl p-3 flex items-center gap-3" style="border-color:var(--amber);">
-      <span class="w-8 h-8 rounded-full flex items-center justify-center shrink-0" style="background:var(--amber-tint); color:var(--amber);">${ICON.globe}</span>
+      <span class="w-8 h-8 rounded-full flex items-center justify-center shrink-0" style="background:var(--amber-tint); color:var(--amber);"><span class="w-4 h-4 inline-flex">${ICON.globe}</span></span>
       <span class="flex-1 text-xs text-ink-soft">Demo modundasınız — veriler yalnızca bu tarayıcıda tutulur. Google Sheets'e bağlanmak için sol üstteki ayarlar simgesine dokunun.</span>
     </div>`}
 

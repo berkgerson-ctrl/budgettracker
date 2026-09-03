@@ -156,7 +156,15 @@ class Store {
   }
 
   subscribe(fn) { this.listeners.add(fn); return () => this.listeners.delete(fn); }
-  emit() { this.listeners.forEach(fn => fn(this.data)); }
+  emit() { clearTimeout(this._renderTimer); this.listeners.forEach(fn => fn(this.data)); }
+  // Yazarken (input sırasında) kullanılan versiyon: veri anında güncellenir,
+  // ancak render (ve dolayısıyla input elemanlarının DOM'da yeniden
+  // oluşturulması) kullanıcı bir süre yazmayı durdurana kadar ertelenir.
+  // Bu sayede mobilde her tuş vuruşunda klavye/imleç kesintiye uğramaz.
+  emitDebounced(delay = 350) {
+    clearTimeout(this._renderTimer);
+    this._renderTimer = setTimeout(() => this.emit(), delay);
+  }
 
   get s() { return this.data; }
   cm() { return this.data.months[this.data.currentMonth]; }
@@ -186,9 +194,17 @@ class Store {
     this.data.connection.url = url;
     localStorage.setItem(LOCAL_URL_KEY, url);
     this.data.connection.demoMode = false;
-    await this.syncFromSheets();
-    this.ensureAtLeastOneMonth();
-    this.emit();
+    try {
+      await this.syncFromSheets();
+    } catch (e) {
+      this.data.connection.error = e.message;
+      this.data.connection.connected = false;
+    } finally {
+      this.ensureAtLeastOneMonth();
+      this.data.connection.syncing = false;
+      this.emit();
+    }
+    if (this.data.connection.error) throw new Error(this.data.connection.error);
   }
 
   disconnect() {
@@ -214,6 +230,10 @@ class Store {
         const sanitized = {};
         Object.entries(all.months).forEach(([k, v]) => { sanitized[k] = sanitizeMonth(v, this.data.users); });
         this.data.months = sanitized;
+        // Sunucudan boş ay listesi geldiyse (ör. ilk bağlantı, henüz boş e-tablo),
+        // seçili ay anahtarını hemen tutarlı hale getir — aksi halde bir sonraki
+        // render() çağrısı state.months[state.currentMonth] üzerinden çökebilir.
+        this.ensureAtLeastOneMonth();
       }
       if (all.settings) {
         if (all.settings.currency) this.data.settings.currency = all.settings.currency;
@@ -298,10 +318,14 @@ class Store {
 
   updateMonth(mutator, immediate = false) {
     mutator(this.cm());
-    this.emit();
     if (immediate) {
+      // Yapısal işlem (satır ekle/sil, kategori seçimi vb.) — anında yansısın.
+      this.emit();
       this.pushCurrentMonth();
     } else {
+      // Serbest yazma alanı (tutar/isim girişi) — render'ı erteleyerek
+      // yazarken imlecin/klavyenin kesintiye uğramasını engelle.
+      this.emitDebounced();
       clearTimeout(this._monthPushTimer);
       this._monthPushTimer = setTimeout(() => this.pushCurrentMonth(), 700);
     }
@@ -329,7 +353,7 @@ class Store {
   }
   renameUser(id, name) {
     const u = this.data.users.find(x => x.id === id);
-    if (u) { u.name = name; this.emit(); this.pushUsers(); }
+    if (u) { u.name = name; this.emitDebounced(); debounced('renameUser-' + id, () => this.pushUsers()); }
   }
   toggleUserRedirect(id) {
     const u = this.data.users.find(x => x.id === id);
@@ -386,18 +410,18 @@ function debounced(key, fn, delay = 700) {
 }
 
 Object.assign(Store.prototype, {
-  setBaseline(v) { this.data.settings.baseline = Number(v) || 0; this.emit(); debounced('baseline', () => this.pushSettings()); },
-  setJointBaseline(v) { this.data.settings.jointSavingsBaseline = Number(v) || 0; this.emit(); debounced('jointBaseline', () => this.pushSettings()); },
+  setBaseline(v) { this.data.settings.baseline = Number(v) || 0; this.emitDebounced(); debounced('baseline', () => this.pushSettings()); },
+  setJointBaseline(v) { this.data.settings.jointSavingsBaseline = Number(v) || 0; this.emitDebounced(); debounced('jointBaseline', () => this.pushSettings()); },
   setPersonalBaseline(userId, v) {
     if (!this.data.settings.personalSavingsBaseline) this.data.settings.personalSavingsBaseline = {};
     this.data.settings.personalSavingsBaseline[userId] = Number(v) || 0;
-    this.emit();
+    this.emitDebounced();
     debounced('personalBaseline', () => this.pushSettings());
   },
   setCurrency(v) { this.data.settings.currency = v; this.emit(); this.pushSettings(); },
   setBalanceOverride(v) {
     this.cm().balanceOverride = v === '' ? null : (Number(v) || 0);
-    this.emit();
+    this.emitDebounced();
     debounced('balanceOverride', () => this.pushCurrentMonth());
   },
   clearBalanceOverride() { this.cm().balanceOverride = null; this.emit(); this.pushCurrentMonth(); },
@@ -418,14 +442,14 @@ Object.assign(Store.prototype, {
   },
   updateCategory(id, patch) {
     const c = this.data.categories.find(x => x.id === id);
-    if (c) { Object.assign(c, patch); this.emit(); debounced('category-' + id, () => this.pushCategories()); }
+    if (c) { Object.assign(c, patch); this.emitDebounced(); debounced('category-' + id, () => this.pushCategories()); }
   },
   removeCategory(id) { this.data.categories = this.data.categories.filter(c => c.id !== id); this.emit(); this.pushCategories(); },
 
   addTemplate(t) { this.data.recurringTemplates.push({ id: uid('t'), active: true, ...t }); this.emit(); this.pushRecurring(); },
   updateTemplate(id, patch) {
     const t = this.data.recurringTemplates.find(x => x.id === id);
-    if (t) { Object.assign(t, patch); this.emit(); debounced('template-' + id, () => this.pushRecurring()); }
+    if (t) { Object.assign(t, patch); this.emitDebounced(); debounced('template-' + id, () => this.pushRecurring()); }
   },
   toggleTemplateActive(id) {
     const t = this.data.recurringTemplates.find(x => x.id === id);
@@ -455,7 +479,7 @@ Object.assign(Store.prototype, {
     const c = this.data.goalContributions.find(x => x.id === id);
     if (!c) return;
     c.amount = Number(amount) || 0;
-    this.emit();
+    this.emitDebounced();
     debounced('goalContrib-' + id, () => this.pushGoalContributionUpdate(c));
   },
   removeGoalContribution(id) {

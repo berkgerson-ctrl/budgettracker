@@ -54,12 +54,12 @@ function fullMarkup(state) {
     </div>
     ${renderQuickAddModal(state)}
     ${renderSettingsModal(state)}
-    <div id="toast" class="toast fixed bottom-6 left-1/2 -translate-x-1/2 opacity-0 pointer-events-none translate-y-2 bg-ink text-white text-xs px-4 py-2.5 rounded-full shadow-lg z-[60]">Kaydedildi</div>
+    <div id="toast" class="toast fixed bottom-6 left-1/2 -translate-x-1/2 opacity-0 pointer-events-none translate-y-2 bg-ink text-white text-xs px-4 py-2.5 rounded-2xl shadow-lg z-[60] max-w-[85%] text-center">Kaydedildi</div>
   `;
 }
 
 let toastTimer = null;
-function showToast(msg = 'Kaydedildi') {
+function showToast(msg = 'Kaydedildi', duration = 1100) {
   const toast = document.getElementById('toast');
   if (!toast) return;
   toast.textContent = msg;
@@ -69,7 +69,7 @@ function showToast(msg = 'Kaydedildi') {
   toastTimer = setTimeout(() => {
     toast.classList.add('opacity-0', 'translate-y-2');
     toast.classList.remove('opacity-100', 'translate-y-0');
-  }, 1100);
+  }, duration);
 }
 
 function focusSelector(el) {
@@ -89,7 +89,15 @@ export function mountApp(root) {
     const scroller = document.getElementById('scrollArea');
     const scrollTop = scroller ? scroller.scrollTop : 0;
 
-    root.innerHTML = fullMarkup(store.data);
+    try {
+      root.innerHTML = fullMarkup(store.data);
+    } catch (err) {
+      // Beklenmedik bir render hatası uygulamayı tamamen kilitlemesin: hatayı
+      // konsola yazıp bir önceki ekranı korur, store.emit() zincirinin (ör.
+      // Google Sheets bağlantısı) çökmesini engeller.
+      console.error('Render hatası:', err);
+      return;
+    }
 
     const newScroller = document.getElementById('scrollArea');
     if (newScroller) newScroller.scrollTop = scrollTop;
@@ -206,7 +214,7 @@ export function mountApp(root) {
       case 'testSheetsConnection': {
         const url = document.getElementById('sheetsUrlInput').value.trim();
         store.testConnection(url)
-          .then(() => showToast('Bağlantı başarılı ✓'))
+          .then(() => showToast('Bağlantı başarılı ✓ — şimdi "Kaydet & Senkronize Et"e basın', 2600))
           .catch(err => alert('Bağlantı testi başarısız: ' + err.message));
         break;
       }

@@ -1,5 +1,5 @@
 import { ICON } from './icons.js';
-import { formatCurrency, currencySymbol } from '../utils/format.js';
+import { formatCurrency, currencySymbol, numOrEmpty } from '../utils/format.js';
 import { monthLabel } from '../utils/dates.js';
 import { activeUsers } from '../state.js';
 
@@ -54,7 +54,7 @@ export function renderWealthScreen(state, mainHistory, jointHistory, personalHis
         <p class="text-[10px] text-ink-faint mb-2">${earliest ? monthLabel(earliest) : ''} ayı başlamadan önceki toplam varlığınız</p>
         <div class="field flex items-center gap-1 px-3 py-2.5">
           <span class="text-ink-soft text-sm">${sym}</span>
-          <input type="number" step="0.01" data-role="baseline" value="${state.settings.baseline}" class="w-full text-sm text-ink">
+          <input type="number" step="0.01" data-role="baseline" value="${numOrEmpty(state.settings.baseline)}" placeholder="0" class="w-full text-sm text-ink">
         </div>
       </div>
 
@@ -83,7 +83,7 @@ export function renderWealthScreen(state, mainHistory, jointHistory, personalHis
         <label class="text-xs font-semibold text-ink-soft block mb-1">Ortak Birikim Başlangıcı</label>
         <div class="field flex items-center gap-1 px-3 py-2.5">
           <span class="text-ink-soft text-sm">${sym}</span>
-          <input type="number" step="0.01" data-role="jointBaseline" value="${state.settings.jointSavingsBaseline}" class="w-full text-sm text-ink">
+          <input type="number" step="0.01" data-role="jointBaseline" value="${numOrEmpty(state.settings.jointSavingsBaseline)}" placeholder="0" class="w-full text-sm text-ink">
         </div>
       </div>
       <div class="rounded-2xl p-5 mt-4 text-white" style="background:linear-gradient(135deg, var(--violet), #5B4CD6);">
@@ -109,7 +109,7 @@ export function renderWealthScreen(state, mainHistory, jointHistory, personalHis
           <label class="text-xs font-semibold text-ink-soft block mb-1">Başlangıç Bakiyesi</label>
           <div class="field flex items-center gap-1 px-3 py-2.5 mb-3">
             <span class="text-ink-soft text-sm">${sym}</span>
-            <input type="number" step="0.01" data-role="personalBaseline" data-user="${u.id}" value="${baseline}" class="w-full text-sm text-ink">
+            <input type="number" step="0.01" data-role="personalBaseline" data-user="${u.id}" value="${numOrEmpty(baseline)}" placeholder="0" class="w-full text-sm text-ink">
           </div>
           <div class="rounded-xl p-4 text-white mb-3" style="background:linear-gradient(135deg, var(--violet), #5B4CD6);">
             <p class="text-[11px] opacity-90 mb-1">${monthLabel(state.currentMonth)} Sonu Bakiye</p>
