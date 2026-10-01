@@ -30,6 +30,28 @@ birikim takip uygulaması.
   gibi simgesiyle ana ekranda/app çekmecesinde görünür ve tam ekran açılır.
 - **Bootstrap Icons** — Tüm arayüz ikonları [icons.getbootstrap.com](https://icons.getbootstrap.com)
   kaynaklı, MIT lisanslı SVG ikonlardır (`bootstrap-icons` paketi üzerinden).
+- **Karanlık mod** — Sistem/Açık/Koyu seçenekleriyle; tüm renkler CSS değişkenleri
+  üzerinden yönetildiği için her ekran otomatik uyum sağlar.
+- **Akıcı geçişler** — Sekme değişimlerinde yumuşak fade/kayma, buton basma geri
+  bildirimi (`active:scale`), ilerleme halkası/çubuklarının ve kategori limiti
+  barlarının sayfa açılışında sıfırdan dolarak gelmesi.
+- **Hızlı tutar hesaplayıcı** — Her tutar alanına `150+45` gibi basit işlemler
+  yazılabilir; alan dışına tıklandığında (veya Enter'a basıldığında) otomatik
+  hesaplanıp kaydedilir.
+- **Çevrimdışı işlem kuyruğu** — Google Sheets'e ulaşılamadığında yapılan
+  değişiklikler tarayıcıda (localStorage) bir kuyrukta tutulur; bağlantı geri
+  gelince (veya "Şimdi Dene" ile elle) otomatik olarak sırayla gönderilir.
+- **Kategori limiti uyarıları** — Bir kategori harcaması limitinin %80'ine
+  ulaştığında veya aştığında Ana Sayfa'da ve Grafik ekranında turuncu/kırmızı
+  rozetler ve ilerleme çubukları belirir.
+- **Kutlama anları** — Bir hedef %100 tamamlandığında veya toplam varlık
+  belirli yuvarlak eşikleri (1.000 / 5.000 / 10.000 / 50.000 ...) ilk kez
+  geçtiğinde konfeti efekti ve kutlama mesajı gösterilir.
+- **Hızlı Ekle (FAB)** — Alt navigasyondaki artı butonu, hangi sekmede
+  olursanız olun Gelir / Gider / Ortak Birikime hızlıca tutar eklemenizi sağlar.
+- **Zenginleştirilmiş boş durumlar** — Henüz veri olmayan listelerde (sabit
+  gider, ekstra, hedef, şablon) illüstrasyon ikonu ve yönlendirici CTA metni/
+  butonu gösterilir.
 
 ## Proje Yapısı
 

@@ -21,6 +21,51 @@
   --amber-tint: #FBF1E1;
   --violet: #7C6CF0;
   --violet-tint: #EDEBFD;
+  --overlay: rgba(20,26,38,0.45);
+}
+
+.dark {
+  color-scheme: dark;
+  --outer: #060809;
+  --app: #10141C;
+  --card: #1A2028;
+  --teal: #22C99E;
+  --teal-deep: #1AAE87;
+  --teal-tint: #163730;
+  --ink: #EDEFF3;
+  --ink-soft: #97A1B0;
+  --ink-faint: #5B6472;
+  --line: #2A313D;
+  --coral: #FF8478;
+  --coral-tint: #3A2220;
+  --amber: #F2BB68;
+  --amber-tint: #3A2F18;
+  --violet: #A79BFF;
+  --violet-tint: #262040;
+  --overlay: rgba(0,0,0,0.6);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not(.light) {
+    color-scheme: dark;
+    --outer: #060809;
+    --app: #10141C;
+    --card: #1A2028;
+    --teal: #22C99E;
+    --teal-deep: #1AAE87;
+    --teal-tint: #163730;
+    --ink: #EDEFF3;
+    --ink-soft: #97A1B0;
+    --ink-faint: #5B6472;
+    --line: #2A313D;
+    --coral: #FF8478;
+    --coral-tint: #3A2220;
+    --amber: #F2BB68;
+    --amber-tint: #3A2F18;
+    --violet: #A79BFF;
+    --violet-tint: #262040;
+    --overlay: rgba(0,0,0,0.6);
+  }
 }
 
 * { font-family: 'Plus Jakarta Sans', sans-serif; font-feature-settings: "tnum" 1; }
@@ -44,11 +89,11 @@ input[type="number"], input[type="text"], input[type="date"], input[type="url"],
 input[type="number"]::-webkit-inner-spin-button, input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
 
 .field { background: var(--app); border: 1px solid var(--line); border-radius: 12px; }
-.field:focus-within { border-color: var(--teal); background: #fff; }
+.field:focus-within { border-color: var(--teal); background: var(--card); }
 .field input, .field select { background: transparent; outline: none; }
 
 .fab { box-shadow: 0 10px 24px -6px rgba(22,184,147,0.55); }
-.modal-overlay { background: rgba(20,26,38,0.45); }
+.modal-overlay { background: var(--overlay); }
 
 .row-enter { animation: rowIn .25s ease both; }
 @keyframes rowIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
@@ -58,4 +103,46 @@ input:focus-visible, button:focus-visible, select:focus-visible { outline: 2px s
 
 .badge { font-size: 9px; padding: 2px 6px; border-radius: 9999px; display: inline-block; font-weight: 600; }
 
-@media (prefers-reduced-motion: reduce) { .row-enter { animation: none; } }
+/* ---- Mikro etkileşimler: buton/kart basma geri bildirimi ---- */
+button, .pressable {
+  transition: transform .12s ease, opacity .12s ease, background-color .15s ease, color .15s ease, border-color .15s ease;
+}
+button:active, .pressable:active { transform: scale(0.95); }
+@media (hover: hover) {
+  .card:hover { box-shadow: 0 4px 14px rgba(20,30,60,0.06); }
+}
+
+/* ---- Sekme geçiş animasyonu (fade + hafif kayma) ---- */
+.tab-panel { animation: tabIn .22s cubic-bezier(.22,.61,.36,1) both; }
+@keyframes tabIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+/* ---- İlerleme çubuklarının sıfırdan dolarak gelmesi ---- */
+.progress-fill { transition: width 1s cubic-bezier(.22,.61,.36,1); }
+.ring-fill { transition: stroke-dashoffset 1s cubic-bezier(.22,.61,.36,1); }
+
+.field-saved { animation: fieldSaved .6s ease; }
+@keyframes fieldSaved {
+  0% { box-shadow: 0 0 0 0 rgba(34,201,158,0.45); border-color: var(--teal); }
+  100% { box-shadow: 0 0 0 8px rgba(34,201,158,0); border-color: var(--line); }
+}
+
+/* ---- Kayıt/başarı mikro animasyonu ---- */
+.pop-check { animation: popCheck .4s cubic-bezier(.34,1.56,.64,1) both; }
+@keyframes popCheck { 0% { transform: scale(0); opacity: 0; } 60% { transform: scale(1.15); opacity: 1; } 100% { transform: scale(1); } }
+
+/* ---- Boş durum illüstrasyon ikonu hafif animasyon ---- */
+.empty-illustration { animation: floatSoft 3.2s ease-in-out infinite; }
+@keyframes floatSoft { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+
+/* ---- Konfeti ---- */
+.confetti-piece { position: fixed; top: -12px; z-index: 80; border-radius: 2px; pointer-events: none; animation: confettiFall linear forwards; }
+@keyframes confettiFall {
+  0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(115vh) rotate(540deg); opacity: 0.9; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .row-enter, .tab-panel, .pop-check, .empty-illustration, .confetti-piece { animation: none !important; }
+  .progress-fill, .ring-fill { transition: none !important; }
+  button:active, .pressable:active { transform: none; }
+}

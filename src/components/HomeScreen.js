@@ -1,10 +1,26 @@
 import { ICON } from './icons.js';
 import { formatCurrency } from '../utils/format.js';
 import { monthLabel } from '../utils/dates.js';
-import { monthTotals, activeUsers, goalCurrentAmount, goalProgressPct } from '../state.js';
+import { monthTotals, activeUsers, goalCurrentAmount, goalProgressPct, categorySpendForMonth, categoryLimitStatus } from '../state.js';
 
 function detailLine(label, val, currency) {
   return `<div class="flex items-center justify-between py-1"><span class="text-xs text-ink-soft">${label}</span><span class="text-xs font-semibold text-ink">${formatCurrency(val, currency)}</span></div>`;
+}
+
+function budgetWarnings(state, m, currency) {
+  const flagged = state.categories
+    .map(c => ({ c, spend: categorySpendForMonth(m, c.id), status: categoryLimitStatus(categorySpendForMonth(m, c.id), c.limit) }))
+    .filter(x => x.status && x.status.level !== 'ok');
+  if (!flagged.length) return '';
+  const worst = flagged.find(x => x.status.level === 'over') || flagged[0];
+  const over = worst.status.level === 'over';
+  return `
+    <div class="mt-4 card rounded-xl p-3 flex items-center gap-3" style="border-color:${over ? 'var(--coral)' : 'var(--amber)'};">
+      <span class="w-8 h-8 rounded-full flex items-center justify-center shrink-0" style="background:${over ? 'var(--coral-tint)' : 'var(--amber-tint)'}; color:${over ? 'var(--coral)' : 'var(--amber)'};"><span class="w-4 h-4 inline-flex">${ICON.fixed}</span></span>
+      <span class="flex-1 text-xs text-ink-soft">
+        <b class="${over ? 'text-coral' : 'text-amber'}">${worst.c.name}</b> kategorisi ${over ? 'bütçe limitini aştı' : `limitin %${Math.round(worst.status.pct)}'ine ulaştı`}${flagged.length > 1 ? ` (+${flagged.length - 1} kategori daha)` : ''}.
+      </span>
+    </div>`;
 }
 
 function accordionRow(state, key, icon, bg, fg, title, subtitle, amount, negative, detailHtml) {
@@ -77,7 +93,7 @@ export function renderHomeScreen(state) {
           <svg viewBox="0 0 120 120" class="w-28 h-28 -rotate-90">
             <circle cx="60" cy="60" r="52" stroke="rgba(255,255,255,0.28)" stroke-width="10" fill="none"/>
             <circle cx="60" cy="60" r="52" stroke="#ffffff" stroke-width="10" fill="none" stroke-linecap="round"
-              stroke-dasharray="${circumference.toFixed(1)}" stroke-dashoffset="${offset.toFixed(1)}"/>
+              stroke-dasharray="${circumference.toFixed(1)}" stroke-dashoffset="${circumference.toFixed(1)}" data-offset="${offset.toFixed(1)}" class="ring-fill"/>
           </svg>
           <div class="absolute inset-0 flex flex-col items-center justify-center">
             <span class="font-extrabold text-xl">%${pctLabel}</span>
@@ -98,6 +114,8 @@ export function renderHomeScreen(state) {
       <span class="w-8 h-8 rounded-full flex items-center justify-center shrink-0" style="background:var(--amber-tint); color:var(--amber);"><span class="w-4 h-4 inline-flex">${ICON.globe}</span></span>
       <span class="flex-1 text-xs text-ink-soft">Demo modundasınız — veriler yalnızca bu tarayıcıda tutulur. Google Sheets'e bağlanmak için sol üstteki ayarlar simgesine dokunun.</span>
     </div>`}
+
+    ${budgetWarnings(state, m, currency)}
 
     <div class="mt-5">
       <h3 class="font-bold text-sm text-ink mb-3">Bu Ay Özeti <span class="text-[10px] font-normal text-ink-faint">— detay için başlığa dokun</span></h3>

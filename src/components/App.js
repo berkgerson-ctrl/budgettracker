@@ -1,4 +1,4 @@
-import { store, activeUsers, monthTotals } from '../state.js';
+import { store, activeUsers, monthTotals, goalCurrentAmount, goalProgressPct } from '../state.js';
 import { ICON } from './icons.js';
 import { renderHeader } from './Header.js';
 import { renderMonthPills } from './MonthPills.js';
@@ -8,12 +8,15 @@ import { renderWealthScreen } from './WealthScreen.js';
 import { renderGoalsScreen } from './GoalsScreen.js';
 import { renderChartScreen, mountCharts } from './ChartScreen.js';
 import { renderSettingsModal } from './SettingsModal.js';
-import { renderQuickAddModal } from './QuickAddModal.js';
+import { renderQuickAddModal, renderQuickActionsSheet } from './QuickAddModal.js';
+import { evalAmountExpression, formatCurrency } from '../utils/format.js';
+import { celebrateGoalComplete, celebrateMilestone, checkWealthMilestone } from '../utils/celebrate.js';
 
-const NAV_ITEMS = [
+const NAV_ITEMS_LEFT = [
   { tab: 'home', icon: ICON.home, label: 'Ana sayfa' },
-  { tab: 'expenses', icon: ICON.list, label: 'Giderler' },
-  { tab: 'goals', icon: ICON.target, label: 'Hedefler' },
+  { tab: 'expenses', icon: ICON.list, label: 'Giderler' }
+];
+const NAV_ITEMS_RIGHT = [
   { tab: 'wealth', icon: ICON.wallet, label: 'Varlık' },
   { tab: 'chart', icon: ICON.chart, label: 'Grafik' }
 ];
@@ -24,8 +27,13 @@ function bottomNav(state) {
       ${item.icon}
     </button>`;
   return `
-    <div class="absolute bottom-0 inset-x-0 px-4 pb-5 pt-3 bg-white rounded-t-[1.75rem] border-t border-line flex items-center justify-around">
-      ${NAV_ITEMS.map(navBtn).join('')}
+    <div class="absolute bottom-0 inset-x-0 px-4 pb-5 pt-3 bg-card rounded-t-[1.75rem] border-t border-line flex items-center justify-between">
+      ${NAV_ITEMS_LEFT.map(navBtn).join('')}
+      <button data-tab="goals" class="nav-btn flex flex-col items-center gap-1 py-1 px-1.5 ${state.ui.activeTab === 'goals' ? 'active' : ''}" aria-label="Hedefler">${ICON.target}</button>
+      <button data-action="openQuickActions" class="fab -mt-9 w-14 h-14 rounded-full flex items-center justify-center text-white shrink-0 bg-teal pressable" aria-label="Hızlı ekle">
+        ${ICON.plus}
+      </button>
+      ${NAV_ITEMS_RIGHT.map(navBtn).join('')}
     </div>`;
 }
 
@@ -43,18 +51,19 @@ function fullMarkup(state) {
         ${renderHeader(state)}
         ${renderMonthPills(state)}
         <div class="flex-1 overflow-y-auto px-5 pb-32" id="scrollArea">
-          <div id="screenHome" class="${state.ui.activeTab === 'home' ? '' : 'hidden-screen'}">${renderHomeScreen(state)}</div>
-          <div id="screenExpenses" class="${state.ui.activeTab === 'expenses' ? '' : 'hidden-screen'}">${renderExpensesScreen(state)}</div>
-          <div id="screenWealth" class="${state.ui.activeTab === 'wealth' ? '' : 'hidden-screen'}">${renderWealthScreen(state, mainHistory, jointHistory, personalHistories)}</div>
-          <div id="screenGoals" class="${state.ui.activeTab === 'goals' ? '' : 'hidden-screen'}">${renderGoalsScreen(state)}</div>
-          <div id="screenChart" class="${state.ui.activeTab === 'chart' ? '' : 'hidden-screen'}">${renderChartScreen(state)}</div>
+          <div id="screenHome" class="tab-panel ${state.ui.activeTab === 'home' ? '' : 'hidden-screen'}">${renderHomeScreen(state)}</div>
+          <div id="screenExpenses" class="tab-panel ${state.ui.activeTab === 'expenses' ? '' : 'hidden-screen'}">${renderExpensesScreen(state)}</div>
+          <div id="screenWealth" class="tab-panel ${state.ui.activeTab === 'wealth' ? '' : 'hidden-screen'}">${renderWealthScreen(state, mainHistory, jointHistory, personalHistories)}</div>
+          <div id="screenGoals" class="tab-panel ${state.ui.activeTab === 'goals' ? '' : 'hidden-screen'}">${renderGoalsScreen(state)}</div>
+          <div id="screenChart" class="tab-panel ${state.ui.activeTab === 'chart' ? '' : 'hidden-screen'}">${renderChartScreen(state)}</div>
         </div>
         ${bottomNav(state)}
       </div>
     </div>
+    ${renderQuickActionsSheet(state)}
     ${renderQuickAddModal(state)}
     ${renderSettingsModal(state)}
-    <div id="toast" class="toast fixed bottom-6 left-1/2 -translate-x-1/2 opacity-0 pointer-events-none translate-y-2 bg-ink text-white text-xs px-4 py-2.5 rounded-2xl shadow-lg z-[60] max-w-[85%] text-center">Kaydedildi</div>
+    <div id="toast" class="toast fixed bottom-6 left-1/2 -translate-x-1/2 opacity-0 pointer-events-none translate-y-2 text-white text-xs px-4 py-2.5 rounded-2xl shadow-lg z-[60] max-w-[85%] text-center" style="background:#1C2430;">Kaydedildi</div>
   `;
 }
 
@@ -102,11 +111,18 @@ export function mountApp(root) {
     const newScroller = document.getElementById('scrollArea');
     if (newScroller) newScroller.scrollTop = scrollTop;
 
+    const crossedTier = checkWealthMilestone('main-' + (store.data.connection.url || 'demo'), store.data.__mainWealthEnd);
+    if (crossedTier) {
+      celebrateMilestone();
+      showToast(`🎉 Birikimin ${formatCurrency(crossedTier, store.data.settings.currency)}'yı geçti!`, 2600);
+    }
+
     if (store.data.ui.activeTab === 'chart') {
       requestAnimationFrame(() => mountCharts(store.data));
     }
 
     setupUserDragDrop();
+    animateFills();
 
     if (sel) {
       const el = document.querySelector(sel);
@@ -122,31 +138,42 @@ export function mountApp(root) {
   store.subscribe(render);
   store.init().then(render);
 
-  /* ---------------- INPUT / CHANGE DELEGATION ---------------- */
-  function handleFieldChange(e) {
-    const t = e.target;
-    const role = t.dataset.role;
-    if (!role) return;
-    const val = t.type === 'number' ? (t.value === '' ? '' : parseFloat(t.value) || 0) : t.value;
+  // Çevrimdışı kuyruğu: bağlantı geri gelince ve arada bir (30sn) otomatik dene.
+  window.addEventListener('online', () => store.flushQueue());
+  setInterval(() => { if (store.data.connection.queueLength > 0) store.flushQueue(); }, 30000);
 
+  /* ---------------- INPUT / CHANGE DELEGATION ---------------- */
+  // Bu alanlar tutar/para birimi taşır: yazarken hiçbir şey kaydedilmez,
+  // yalnızca odak alandan çıktığında (blur) ya da Enter'a basıldığında
+  // "150+45" gibi basit ifadeler hesaplanıp son sayı kaydedilir. Böylece
+  // yazarken input hiç yeniden çizilmez ve "+ - * /" karakterlerine izin
+  // vermek için bu alanlar type="text" olarak tanımlıdır.
+  const AMOUNT_ROLES = new Set([
+    'income', 'extraIncome', 'fixedAmount', 'extraAmount', 'pool', 'birikim',
+    'allowance', 'personalNote', 'personalSavingsAmount', 'baseline',
+    'balanceOverride', 'jointBaseline', 'personalBaseline', 'categoryLimit',
+    'templateAmount', 'goalContribAmount', 'goalContributionInput'
+  ]);
+
+  function applyFieldValue(t, role, val) {
     switch (role) {
-      case 'income': store.updateMonth(m => { m.incomes[t.dataset.user] = Number(val) || 0; }); break;
-      case 'extraIncome': store.updateMonth(m => { m.extraIncome = Number(val) || 0; }); break;
+      case 'income': store.updateMonth(m => { m.incomes[t.dataset.user] = Number(val) || 0; }, true); break;
+      case 'extraIncome': store.updateMonth(m => { m.extraIncome = Number(val) || 0; }, true); break;
       case 'fixedName': store.updateMonth(m => { const i = m.fixedExpenses.find(x => x.id === t.dataset.id); if (i) i.name = val; }); break;
-      case 'fixedAmount': store.updateMonth(m => { const i = m.fixedExpenses.find(x => x.id === t.dataset.id); if (i) i.amount = Number(val) || 0; }); break;
+      case 'fixedAmount': store.updateMonth(m => { const i = m.fixedExpenses.find(x => x.id === t.dataset.id); if (i) i.amount = Number(val) || 0; }, true); break;
       case 'fixedCategory': store.updateMonth(m => { const i = m.fixedExpenses.find(x => x.id === t.dataset.id); if (i) i.categoryId = val || null; }, true); break;
       case 'extraName': store.updateMonth(m => { const i = m.extras.find(x => x.id === t.dataset.id); if (i) i.name = val; }); break;
-      case 'extraAmount': store.updateMonth(m => { const i = m.extras.find(x => x.id === t.dataset.id); if (i) i.amount = Number(val) || 0; }); break;
+      case 'extraAmount': store.updateMonth(m => { const i = m.extras.find(x => x.id === t.dataset.id); if (i) i.amount = Number(val) || 0; }, true); break;
       case 'extraCategory': store.updateMonth(m => { const i = m.extras.find(x => x.id === t.dataset.id); if (i) i.categoryId = val || null; }, true); break;
-      case 'pool': store.updateMonth(m => { m.pool = Number(val) || 0; }); break;
-      case 'birikim': store.updateMonth(m => { m.birikim = Number(val) || 0; }); break;
-      case 'allowance': store.updateMonth(m => { m.allowance[t.dataset.user] = Number(val) || 0; }); break;
-      case 'personalNote': store.updateMonth(m => { m.personalNote[t.dataset.user] = Number(val) || 0; }); break;
+      case 'pool': store.updateMonth(m => { m.pool = Number(val) || 0; }, true); break;
+      case 'birikim': store.updateMonth(m => { m.birikim = Number(val) || 0; }, true); break;
+      case 'allowance': store.updateMonth(m => { m.allowance[t.dataset.user] = Number(val) || 0; }, true); break;
+      case 'personalNote': store.updateMonth(m => { m.personalNote[t.dataset.user] = Number(val) || 0; }, true); break;
       case 'goalContribAmount': store.updateGoalContribution(t.dataset.id, val); break;
       case 'personalSavingsAmount': store.updateMonth(m => {
           if (!m.personalSavings[t.dataset.user]) m.personalSavings[t.dataset.user] = { amount: 0, redirectToJoint: false };
           m.personalSavings[t.dataset.user].amount = Number(val) || 0;
-        }); break;
+        }, true); break;
       case 'baseline': store.setBaseline(val); break;
       case 'jointBaseline': store.setJointBaseline(val); break;
       case 'personalBaseline': store.setPersonalBaseline(t.dataset.user, val); break;
@@ -160,8 +187,44 @@ export function mountApp(root) {
       default: break;
     }
   }
+
+  function handleFieldChange(e) {
+    const t = e.target;
+    const role = t.dataset.role;
+    if (!role || AMOUNT_ROLES.has(role)) return; // tutar alanları blur'da işlenir
+    applyFieldValue(t, role, t.value);
+  }
   document.addEventListener('input', handleFieldChange);
   document.addEventListener('change', handleFieldChange);
+
+  // Tutar alanları: odaktan çıkınca ifadeyi hesapla, temiz sayıyı hem
+  // input'a hem state'e yaz.
+  function handleAmountCommit(e) {
+    const t = e.target;
+    const role = t.dataset.role;
+    if (!role || !AMOUNT_ROLES.has(role)) return;
+    if (t.value.trim() === '') { applyFieldValue(t, role, ''); return; }
+    const result = evalAmountExpression(t.value);
+    t.value = result;
+    applyFieldValue(t, role, result);
+    flashSaved(t);
+  }
+  document.addEventListener('blur', handleAmountCommit, true);
+
+  // data-role taşımayan bağımsız tutar alanları (Hızlı Ekle / Hedef formu):
+  // aynı hesap makinesi mantığıyla, sadece görünen değeri günceller.
+  const STANDALONE_AMOUNT_IDS = new Set(['quickExtraAmount', 'goalTarget', 'goalMonthly']);
+  document.addEventListener('blur', (e) => {
+    if (e.target.id && STANDALONE_AMOUNT_IDS.has(e.target.id) && e.target.value.trim() !== '') {
+      e.target.value = evalAmountExpression(e.target.value);
+    }
+  }, true);
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && e.target.dataset && AMOUNT_ROLES.has(e.target.dataset.role)) {
+      e.preventDefault();
+      e.target.blur();
+    }
+  });
 
   /* ---------------- CLICK DELEGATION ---------------- */
   document.addEventListener('click', function (e) {
@@ -192,13 +255,23 @@ export function mountApp(root) {
           m.personalSavings[u].redirectToJoint = !m.personalSavings[u].redirectToJoint;
         }, true); break;
 
-      case 'openAddExtra': openModal('modalAddExtra'); break;
+      case 'openAddExtra': store.data.ui.quickAddMode = 'expense'; openModal('modalAddExtra'); break;
+      case 'openQuickActions': openModal('modalQuickActions'); break;
+      case 'chooseQuickAction': store.data.ui.quickAddMode = btn.dataset.mode; openModal('modalAddExtra'); break;
       case 'submitAddExtra': {
-        const name = document.getElementById('quickExtraName').value.trim();
-        const amount = parseFloat(document.getElementById('quickExtraAmount').value) || 0;
-        const categoryId = document.getElementById('quickExtraCategory').value || null;
-        if (name || amount) {
-          store.updateMonth(m => { m.extras.push({ id: crypto.randomUUID(), name: name || 'Ekstra masraf', amount, categoryId }); }, true);
+        const mode = store.data.ui.quickAddMode || 'expense';
+        const amount = evalAmountExpression(document.getElementById('quickExtraAmount').value);
+        if (mode === 'expense') {
+          const name = document.getElementById('quickExtraName').value.trim();
+          const categoryId = document.getElementById('quickExtraCategory').value || null;
+          if (name || amount) {
+            store.updateMonth(m => { m.extras.push({ id: crypto.randomUUID(), name: name || 'Ekstra masraf', amount, categoryId }); }, true);
+            showToast('Gider eklendi');
+          }
+        } else if (mode === 'income') {
+          if (amount) { store.updateMonth(m => { m.extraIncome = (Number(m.extraIncome) || 0) + amount; }, true); showToast('Gelir eklendi'); }
+        } else if (mode === 'savings') {
+          if (amount) { store.updateMonth(m => { m.birikim = (Number(m.birikim) || 0) + amount; }, true); showToast('Birikime eklendi'); }
         }
         closeModal('modalAddExtra');
         break;
@@ -210,6 +283,7 @@ export function mountApp(root) {
       case 'openSettings': openModal('modalSettings'); break;
       case 'closeModal': closeModal(btn.dataset.modal); break;
       case 'setSettingsTab': store.setSettingsTab(btn.dataset.stab); break;
+      case 'setTheme': store.setTheme(btn.dataset.theme); break;
 
       case 'testSheetsConnection': {
         const url = document.getElementById('sheetsUrlInput').value.trim();
@@ -226,6 +300,7 @@ export function mountApp(root) {
           .catch(err => alert('Bağlanılamadı: ' + err.message));
         break;
       }
+      case 'flushQueueNow': store.flushQueue(); break;
       case 'disconnectSheets':
         if (confirm('Google Sheets bağlantısı kaldırılacak ve demo moduna dönülecek. Emin misiniz?')) store.disconnect();
         break;
@@ -257,8 +332,8 @@ export function mountApp(root) {
       case 'toggleNewGoalForm': store.toggleNewGoalForm(); break;
       case 'submitNewGoal': {
         const name = document.getElementById('goalName').value.trim();
-        const target = parseFloat(document.getElementById('goalTarget').value) || 0;
-        const monthly = parseFloat(document.getElementById('goalMonthly').value) || null;
+        const target = evalAmountExpression(document.getElementById('goalTarget').value);
+        const monthlyRaw = document.getElementById('goalMonthly').value.trim(); const monthly = monthlyRaw ? evalAmountExpression(monthlyRaw) : null;
         const date = document.getElementById('goalDate').value || null;
         if (!name || !target) { alert('Lütfen hedef adı ve tutarını gir.'); break; }
         store.addGoal({ name, targetAmount: target, monthlyContribution: monthly, targetDate: date });
@@ -269,8 +344,20 @@ export function mountApp(root) {
         break;
       case 'addGoalContribution': {
         const input = document.querySelector(`[data-role="goalContributionInput"][data-id="${btn.dataset.id}"]`);
-        const amount = parseFloat(input.value) || 0;
-        if (amount > 0) { store.addGoalContribution(btn.dataset.id, amount); showToast('Hedefe eklendi'); input.value = ''; }
+        const amount = evalAmountExpression(input.value);
+        if (amount > 0) {
+          const goal = store.data.goals.find(g => g.id === btn.dataset.id);
+          const before = goal ? goalProgressPct(goal, goalCurrentAmount(goal.id, store.data.goalContributions)) : 0;
+          store.addGoalContribution(btn.dataset.id, amount);
+          input.value = '';
+          const after = goal ? goalProgressPct(goal, goalCurrentAmount(goal.id, store.data.goalContributions)) : 0;
+          if (before < 100 && after >= 100) {
+            celebrateGoalComplete();
+            showToast(`🎉 "${goal.name}" hedefine ulaştın!`, 2600);
+          } else {
+            showToast('Hedefe eklendi');
+          }
+        }
         break;
       }
       case 'deleteGoalContribution':
@@ -285,8 +372,30 @@ export function mountApp(root) {
   });
 }
 
+// Bir tutar alanı başarıyla kaydedildiğinde çevresinde kısa bir yeşil
+// "onaylandı" titreşimi gösterir.
+function flashSaved(t) {
+  const field = t.closest('.field');
+  if (!field) return;
+  field.classList.remove('field-saved');
+  void field.offsetWidth;
+  field.classList.add('field-saved');
+}
+
 function openModal(id) { store.openModalUI(id); }
 function closeModal() { store.closeModalUI(); }
+
+// İlerleme halkası ve çubuklarının sıfırdan dolarak gelmesini sağlar.
+function animateFills() {
+  requestAnimationFrame(() => {
+    document.querySelectorAll('.ring-fill[data-offset]').forEach(el => {
+      el.style.strokeDashoffset = el.dataset.offset;
+    });
+    document.querySelectorAll('.progress-fill[data-target-width]').forEach(el => {
+      el.style.width = el.dataset.targetWidth;
+    });
+  });
+}
 
 /* ---------------- Kullanıcı listesi sürükle-bırak (pointer tabanlı, dokunmatik uyumlu) ---------------- */
 function setupUserDragDrop() {

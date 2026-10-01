@@ -20,6 +20,11 @@ function connectionSection(state) {
     </div>
     ${c.error ? `<p class="text-xs text-coral mb-2">${escapeHtml(c.error)}</p>` : ''}
     ${c.lastSync ? `<p class="text-[10px] text-ink-faint mb-2">Son senkronizasyon: ${new Date(c.lastSync).toLocaleString('tr-TR')}</p>` : ''}
+    ${c.queueLength > 0 ? `
+    <div class="flex items-center justify-between gap-2 mb-2 px-3 py-2 rounded-xl" style="background:var(--amber-tint);">
+      <span class="text-[11px] text-amber font-semibold">${c.flushing ? 'Senkronize ediliyor…' : `${c.queueLength} işlem çevrimdışı kuyrukta, bağlantı gelince otomatik gönderilecek`}</span>
+      <button data-action="flushQueueNow" class="text-[11px] font-semibold text-amber underline shrink-0 ${c.flushing ? 'opacity-50 pointer-events-none' : ''}">Şimdi Dene</button>
+    </div>` : ''}
     <div class="grid grid-cols-2 gap-2 mb-2">
       <button data-action="testSheetsConnection" class="py-2.5 rounded-xl border border-ink-faint text-ink text-xs font-semibold ${c.syncing ? 'opacity-50 pointer-events-none' : ''}">Bağlantıyı Test Et</button>
       <button data-action="connectSheets" class="py-2.5 rounded-xl text-white text-xs font-semibold bg-teal ${c.syncing ? 'opacity-50 pointer-events-none' : ''}">Kaydet &amp; Senkronize Et</button>
@@ -70,7 +75,7 @@ function categoriesSection(state) {
       <input type="color" data-role="categoryColor" data-id="${c.id}" value="${c.color || '#8891A0'}" class="w-7 h-7 rounded-lg border border-line shrink-0">
       <input type="text" data-role="categoryName" data-id="${c.id}" value="${escapeHtml(c.name)}" class="flex-1 min-w-0 text-sm font-semibold text-ink bg-transparent outline-none">
       <div class="field flex items-center gap-1 px-2 py-1.5 w-24 shrink-0">
-        <input type="number" min="0" placeholder="Limit" data-role="categoryLimit" data-id="${c.id}" value="${c.limit ?? ''}" class="w-full text-right text-xs text-ink">
+        <input type="text" inputmode="decimal" autocomplete="off" placeholder="Limit" data-role="categoryLimit" data-id="${c.id}" value="${c.limit ?? ''}" class="w-full text-right text-xs text-ink">
       </div>
       <button data-action="removeCategory" data-id="${c.id}" class="w-7 h-7 rounded-lg bg-coral-tint text-coral flex items-center justify-center shrink-0" aria-label="Sil">
         <span class="w-3.5 h-3.5 inline-flex">${ICON.close}</span>
@@ -92,7 +97,7 @@ function recurringSection(state) {
     <div class="card rounded-xl p-3 flex items-center gap-2">
       <input type="text" data-role="templateName" data-id="${t.id}" value="${escapeHtml(t.name)}" class="flex-1 min-w-0 text-sm font-semibold text-ink bg-transparent outline-none">
       <div class="field flex items-center gap-1 px-2 py-1.5 w-24 shrink-0">
-        <input type="number" step="0.01" data-role="templateAmount" data-id="${t.id}" value="${numOrEmpty(t.amount)}" placeholder="0" class="w-full text-right text-xs text-ink">
+        <input type="text" inputmode="decimal" autocomplete="off" data-role="templateAmount" data-id="${t.id}" value="${numOrEmpty(t.amount)}" placeholder="0" class="w-full text-right text-xs text-ink">
       </div>
       <button data-action="toggleTemplateActive" data-id="${t.id}" class="badge shrink-0" style="background:${t.active ? 'var(--teal-tint)' : 'var(--ink-faint)'}; color:${t.active ? 'var(--teal-deep)' : '#fff'};">${t.active ? 'Aktif' : 'Pasif'}</button>
       <button data-action="removeTemplate" data-id="${t.id}" class="w-7 h-7 rounded-lg bg-coral-tint text-coral flex items-center justify-center shrink-0" aria-label="Sil">
@@ -102,11 +107,22 @@ function recurringSection(state) {
   return `
     <p class="text-sm font-bold text-ink mb-1">Düzenli İşlem Şablonları</p>
     <p class="text-xs text-ink-soft mb-3">Yeni ay eklerken aktif şablonlar otomatik olarak Sabit Masraflar listesine kopyalanır. Giderler ekranındaki "düzenli şablon olarak kaydet" ile de buraya ekleyebilirsin.</p>
-    <div class="space-y-2 mb-3">${rows || `<p class="text-xs text-ink-faint italic">Henüz şablon yok.</p>`}</div>
+    <div class="space-y-2 mb-3">${rows || `
+      <div class="text-center py-6">
+        <span class="empty-illustration inline-flex w-12 h-12 rounded-full items-center justify-center mb-2" style="background:var(--teal-tint); color:var(--teal-deep);"><span class="w-6 h-6 inline-flex">${ICON.repeat}</span></span>
+        <p class="text-xs font-semibold text-ink">Henüz düzenli şablon yok</p>
+        <p class="text-[11px] text-ink-faint mt-0.5">Giderler ekranında sabit gider listeni doldurup "düzenli şablon olarak kaydet"e dokunarak buraya ekleyebilirsin.</p>
+      </div>`}</div>
   `;
 }
 
 function generalSection(state) {
+  const theme = state.settings.theme || 'system';
+  const themeOptions = [
+    { key: 'system', label: 'Sistem' },
+    { key: 'light', label: 'Açık' },
+    { key: 'dark', label: 'Koyu' }
+  ];
   return `
     <p class="text-sm font-bold text-ink mb-3">Genel</p>
     <label class="text-xs font-semibold text-ink-soft block mb-1.5">Para Birimi</label>
@@ -114,6 +130,10 @@ function generalSection(state) {
       <select id="currencySelect" class="w-full text-sm text-ink">
         ${CURRENCIES.map(c => `<option value="${c.code}" ${state.settings.currency === c.code ? 'selected' : ''}>${c.label}</option>`).join('')}
       </select>
+    </div>
+    <label class="text-xs font-semibold text-ink-soft block mb-1.5">Görünüm</label>
+    <div class="flex gap-2 mb-4">
+      ${themeOptions.map(o => `<button data-action="setTheme" data-theme="${o.key}" class="flex-1 py-2.5 rounded-xl text-xs font-semibold border ${theme === o.key ? 'bg-teal text-white border-teal' : 'bg-app text-ink-soft border-line'}">${o.label}</button>`).join('')}
     </div>
     <button data-action="loadSample" class="w-full py-3 rounded-xl border border-teal text-teal-deep font-semibold text-sm mb-3">Örnek Verilerle Doldur (Demo)</button>
     <button data-action="resetAll" class="w-full py-3 rounded-xl border border-coral text-coral font-semibold text-sm">Yerel Verileri Sıfırla</button>
@@ -140,7 +160,7 @@ export function renderSettingsModal(state) {
 
   return `
   <div id="modalSettings" class="fixed inset-0 modal-overlay ${state.ui.openModal === 'modalSettings' ? 'flex' : 'hidden-screen'} items-end sm:items-center justify-center z-50">
-    <div class="w-full sm:max-w-[420px] bg-white rounded-t-3xl sm:rounded-3xl p-6 max-h-[88vh] flex flex-col">
+    <div class="w-full sm:max-w-[420px] bg-card rounded-t-3xl sm:rounded-3xl p-6 max-h-[88vh] flex flex-col">
       <div class="flex items-center justify-between mb-4 shrink-0">
         <h3 class="font-extrabold text-lg text-ink">Ayarlar</h3>
         <button data-action="closeModal" data-modal="modalSettings" class="w-8 h-8 rounded-full bg-app flex items-center justify-center text-ink-soft">

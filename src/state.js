@@ -2,6 +2,26 @@ import { uid, sortedKeys, todayMonthKey, nextMonthKey, monthsUntil } from './uti
 import * as api from './services/sheetsApi.js';
 
 const LOCAL_URL_KEY = 'butce-sheets-url-v1';
+const QUEUE_KEY = 'butce-pending-queue-v1';
+
+function loadQueue() {
+  try { return JSON.parse(localStorage.getItem(QUEUE_KEY) || '[]'); } catch { return []; }
+}
+function saveQueueToStorage(q) {
+  try { localStorage.setItem(QUEUE_KEY, JSON.stringify(q)); } catch { /* depolama dolu/erişilemez olabilir */ }
+}
+function isLikelyOffline(e) {
+  return typeof navigator !== 'undefined' && navigator.onLine === false
+    || !!(e && /Sunucuya ulaşılamadı/.test(e.message || ''));
+}
+
+export function applyTheme(theme) {
+  const root = document.documentElement;
+  root.classList.remove('dark', 'light');
+  if (theme === 'dark') root.classList.add('dark');
+  else if (theme === 'light') root.classList.add('light');
+  // 'system' → sınıf eklenmez, CSS'teki prefers-color-scheme medya sorgusu devreye girer.
+}
 
 function defaultUsers() {
   return [
@@ -103,6 +123,14 @@ export function categorySpend(months, categoryId) {
   return total;
 }
 
+// Kategori limiti durumunu döner: null (limit yok), 'ok', 'warn' (%80+) veya 'over' (%100+).
+export function categoryLimitStatus(spend, limit) {
+  if (!limit) return null;
+  const pct = (spend / limit) * 100;
+  const level = pct >= 100 ? 'over' : pct >= 80 ? 'warn' : 'ok';
+  return { level, pct: Math.min(999, pct) };
+}
+
 export function categorySpendForMonth(month, categoryId) {
   let total = 0;
   (month.fixedExpenses || []).forEach(i => { if (i.categoryId === categoryId) total += Number(i.amount) || 0; });
@@ -142,8 +170,8 @@ class Store {
     this.listeners = new Set();
     const savedUrl = localStorage.getItem(LOCAL_URL_KEY) || '';
     this.data = {
-      connection: { url: savedUrl, connected: false, syncing: false, lastSync: null, error: null, demoMode: !savedUrl },
-      settings: { currency: 'EUR', baseline: 0, jointSavingsBaseline: 0, personalSavingsBaseline: {} },
+      connection: { url: savedUrl, connected: false, syncing: false, flushing: false, offline: false, lastSync: null, error: null, demoMode: !savedUrl, queueLength: loadQueue().length },
+      settings: { currency: 'EUR', theme: localStorage.getItem('butce-theme-v1') || 'system', baseline: 0, jointSavingsBaseline: 0, personalSavingsBaseline: {} },
       users: defaultUsers(),
       categories: defaultCategories(),
       recurringTemplates: [],
@@ -151,8 +179,9 @@ class Store {
       goals: [],
       goalContributions: [],
       currentMonth: null,
-      ui: { activeTab: 'home', openRows: new Set(), wealthLayer: 'main', settingsTab: 'connection', showNewGoalForm: false, openModal: null }
+      ui: { activeTab: 'home', openRows: new Set(), wealthLayer: 'main', settingsTab: 'connection', showNewGoalForm: false, openModal: null, quickAddMode: 'expense' }
     };
+    applyTheme(this.data.settings.theme);
   }
 
   subscribe(fn) { this.listeners.add(fn); return () => this.listeners.delete(fn); }
@@ -237,6 +266,7 @@ class Store {
       }
       if (all.settings) {
         if (all.settings.currency) this.data.settings.currency = all.settings.currency;
+        if (all.settings.theme) { this.data.settings.theme = all.settings.theme; localStorage.setItem('butce-theme-v1', all.settings.theme); applyTheme(all.settings.theme); }
         if (all.settings.baseline !== undefined) this.data.settings.baseline = Number(all.settings.baseline) || 0;
         if (all.settings.jointSavingsBaseline !== undefined) this.data.settings.jointSavingsBaseline = Number(all.settings.jointSavingsBaseline) || 0;
         if (all.settings.personalSavingsBaseline) {
@@ -254,33 +284,95 @@ class Store {
   }
 
   /* ----- Push helpers (sessiz başarısızlık yerine hataları connection.error'a yazar) ----- */
-  async _push(fn) {
+  // queueEntry verilirse ve hata gerçekten bir ağ/bağlantı sorunuysa (sunucuya
+  // ulaşılamıyorsa), işlem localStorage'daki kuyruğa eklenir ve bağlantı geri
+  // gelince otomatik olarak yeniden denenir — veri kaybolmaz.
+  async _push(fn, queueEntry = null) {
     if (this.data.connection.demoMode) return;
     try {
       this.data.connection.syncing = true; this.emit();
       await fn();
       this.data.connection.lastSync = new Date().toISOString();
       this.data.connection.error = null;
+      this.data.connection.offline = false;
     } catch (e) {
       this.data.connection.error = e.message;
+      if (queueEntry && isLikelyOffline(e)) {
+        this.enqueue(queueEntry.action, queueEntry.payload);
+        this.data.connection.offline = true;
+      }
     } finally {
       this.data.connection.syncing = false;
       this.emit();
     }
   }
 
-  pushCurrentMonth() { return this._push(() => api.saveMonth(this.data.connection.url, this.data.currentMonth, this.cm())); }
-  pushUsers() { return this._push(() => api.saveUsers(this.data.connection.url, this.data.users)); }
-  pushGoals() { return this._push(() => api.saveGoals(this.data.connection.url, this.data.goals)); }
+  enqueue(action, payload) {
+    const queue = loadQueue();
+    queue.push({ id: uid('q'), action, payload, queuedAt: new Date().toISOString() });
+    saveQueueToStorage(queue);
+    this.data.connection.queueLength = queue.length;
+  }
+
+  // Kuyruktaki bekleyen işlemleri sırayla sunucuya göndermeyi dener. Hâlâ
+  // çevrimdışıysa kalan işlemleri kuyrukta bırakır; kalıcı bir sunucu hatası
+  // varsa (offline değilse) o öğeyi atlayıp devam eder.
+  async flushQueue() {
+    if (this.data.connection.demoMode || !this.data.connection.url) return;
+    const queue = loadQueue();
+    if (!queue.length) { this.data.connection.queueLength = 0; return; }
+    this.data.connection.flushing = true; this.emit();
+    const remaining = [];
+    for (let i = 0; i < queue.length; i++) {
+      const item = queue[i];
+      try {
+        await api.rawCall(this.data.connection.url, item.action, item.payload);
+      } catch (e) {
+        if (isLikelyOffline(e)) { remaining.push(...queue.slice(i)); break; }
+        // Ağ sorunu değilse (ör. sunucu tarafı hata) bu öğeyi atlayıp devam et.
+      }
+    }
+    saveQueueToStorage(remaining);
+    this.data.connection.queueLength = remaining.length;
+    this.data.connection.offline = remaining.length > 0;
+    this.data.connection.flushing = false;
+    if (remaining.length === 0) { try { await this.syncFromSheets(); } catch { /* yoksay */ } }
+    this.emit();
+  }
+
+  pushCurrentMonth() {
+    const monthKey = this.data.currentMonth, data = this.cm();
+    return this._push(() => api.saveMonth(this.data.connection.url, monthKey, data), { action: 'saveMonth', payload: { monthKey, data } });
+  }
+  pushUsers() {
+    const users = this.data.users;
+    return this._push(() => api.saveUsers(this.data.connection.url, users), { action: 'saveUsers', payload: { users } });
+  }
+  pushGoals() {
+    const goals = this.data.goals;
+    return this._push(() => api.saveGoals(this.data.connection.url, goals), { action: 'saveGoals', payload: { goals } });
+  }
   pushSettings() {
     const flat = { ...this.data.settings, personalSavingsBaseline: JSON.stringify(this.data.settings.personalSavingsBaseline || {}) };
-    return this._push(() => api.saveSettings(this.data.connection.url, flat));
+    return this._push(() => api.saveSettings(this.data.connection.url, flat), { action: 'saveSettings', payload: { settings: flat } });
   }
-  pushRecurring() { return this._push(() => api.saveRecurring(this.data.connection.url, this.data.recurringTemplates)); }
-  pushCategories() { return this._push(() => api.saveCategories(this.data.connection.url, this.data.categories)); }
-  pushGoalContribution(contribution) { return this._push(() => api.saveGoalContribution(this.data.connection.url, contribution)); }
-  pushGoalContributionUpdate(contribution) { return this._push(() => api.updateGoalContribution(this.data.connection.url, contribution)); }
-  pushGoalContributionDelete(id) { return this._push(() => api.deleteGoalContribution(this.data.connection.url, id)); }
+  pushRecurring() {
+    const templates = this.data.recurringTemplates;
+    return this._push(() => api.saveRecurring(this.data.connection.url, templates), { action: 'saveRecurring', payload: { templates } });
+  }
+  pushCategories() {
+    const categories = this.data.categories;
+    return this._push(() => api.saveCategories(this.data.connection.url, categories), { action: 'saveCategories', payload: { categories } });
+  }
+  pushGoalContribution(contribution) {
+    return this._push(() => api.saveGoalContribution(this.data.connection.url, contribution), { action: 'saveGoalContribution', payload: contribution });
+  }
+  pushGoalContributionUpdate(contribution) {
+    return this._push(() => api.updateGoalContribution(this.data.connection.url, contribution), { action: 'updateGoalContribution', payload: contribution });
+  }
+  pushGoalContributionDelete(id) {
+    return this._push(() => api.deleteGoalContribution(this.data.connection.url, id), { action: 'deleteGoalContribution', payload: { id } });
+  }
 
   /* ----- Ay yönetimi ----- */
   selectMonth(key) {
@@ -410,19 +502,26 @@ function debounced(key, fn, delay = 700) {
 }
 
 Object.assign(Store.prototype, {
-  setBaseline(v) { this.data.settings.baseline = Number(v) || 0; this.emitDebounced(); debounced('baseline', () => this.pushSettings()); },
-  setJointBaseline(v) { this.data.settings.jointSavingsBaseline = Number(v) || 0; this.emitDebounced(); debounced('jointBaseline', () => this.pushSettings()); },
+  setBaseline(v) { this.data.settings.baseline = Number(v) || 0; this.emit(); this.pushSettings(); },
+  setJointBaseline(v) { this.data.settings.jointSavingsBaseline = Number(v) || 0; this.emit(); this.pushSettings(); },
   setPersonalBaseline(userId, v) {
     if (!this.data.settings.personalSavingsBaseline) this.data.settings.personalSavingsBaseline = {};
     this.data.settings.personalSavingsBaseline[userId] = Number(v) || 0;
-    this.emitDebounced();
-    debounced('personalBaseline', () => this.pushSettings());
+    this.emit();
+    this.pushSettings();
   },
   setCurrency(v) { this.data.settings.currency = v; this.emit(); this.pushSettings(); },
+  setTheme(v) {
+    this.data.settings.theme = v;
+    localStorage.setItem('butce-theme-v1', v);
+    applyTheme(v);
+    this.emit();
+    this.pushSettings();
+  },
   setBalanceOverride(v) {
     this.cm().balanceOverride = v === '' ? null : (Number(v) || 0);
-    this.emitDebounced();
-    debounced('balanceOverride', () => this.pushCurrentMonth());
+    this.emit();
+    this.pushCurrentMonth();
   },
   clearBalanceOverride() { this.cm().balanceOverride = null; this.emit(); this.pushCurrentMonth(); },
 

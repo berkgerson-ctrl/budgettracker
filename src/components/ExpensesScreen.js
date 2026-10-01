@@ -20,7 +20,7 @@ function lineItemRow(item, kind, state) {
       </div>
       <div class="field flex items-center gap-1 px-3 py-2 w-24 shrink-0">
         <span class="text-ink-soft text-xs">${currencySymbol(state.settings.currency)}</span>
-        <input type="number" step="0.01" min="0" data-role="${kind}Amount" data-id="${item.id}" value="${numOrEmpty(item.amount)}" placeholder="0" class="w-full text-right text-sm text-ink">
+        <input type="text" inputmode="decimal" autocomplete="off" data-role="${kind}Amount" data-id="${item.id}" value="${numOrEmpty(item.amount)}" placeholder="0" class="w-full text-right text-sm text-ink">
       </div>
       <button data-action="delete${kind === 'fixed' ? 'Fixed' : 'Extra'}" data-id="${item.id}" class="w-8 h-8 rounded-lg bg-coral-tint text-coral flex items-center justify-center shrink-0" aria-label="Sil">
         <span class="w-3.5 h-3.5 inline-flex">${ICON.close}</span>
@@ -40,16 +40,24 @@ export function renderExpensesScreen(state) {
       <label class="text-sm text-ink-soft">${escapeHtml(u.name)} — Maaş</label>
       <div class="field flex items-center gap-1 px-3 py-2 w-32">
         <span class="text-ink-soft text-xs">${sym}</span>
-        <input type="number" step="0.01" min="0" data-role="income" data-user="${u.id}" value="${numOrEmpty(m.incomes[u.id])}" placeholder="0" class="w-full text-right text-sm text-ink">
+        <input type="text" inputmode="decimal" autocomplete="off" data-role="income" data-user="${u.id}" value="${numOrEmpty(m.incomes[u.id])}" placeholder="0" class="w-full text-right text-sm text-ink">
       </div>
     </div>`).join('');
 
   const fixedRows = m.fixedExpenses.length === 0
-    ? `<p class="text-xs text-ink-faint italic">Henüz sabit gider eklenmedi.</p>`
+    ? `<div class="text-center py-6">
+        <span class="empty-illustration inline-flex w-12 h-12 rounded-full items-center justify-center mb-2" style="background:var(--amber-tint); color:var(--amber);"><span class="w-6 h-6 inline-flex">${ICON.fixed}</span></span>
+        <p class="text-xs font-semibold text-ink">Henüz sabit gider yok</p>
+        <p class="text-[11px] text-ink-faint mt-0.5">Kira, fatura gibi düzenli giderlerini eklemek için sağ üstteki + simgesine dokun.</p>
+      </div>`
     : m.fixedExpenses.map(i => lineItemRow(i, 'fixed', state)).join('');
 
   const extraRows = m.extras.length === 0
-    ? `<p class="text-xs text-ink-faint italic">Bu ay için ekstra masraf eklenmedi.</p>`
+    ? `<div class="text-center py-6">
+        <span class="empty-illustration inline-flex w-12 h-12 rounded-full items-center justify-center mb-2" style="background:var(--coral-tint); color:var(--coral);"><span class="w-6 h-6 inline-flex">${ICON.extra}</span></span>
+        <p class="text-xs font-semibold text-ink">Bu ay ekstra masrafın yok</p>
+        <p class="text-[11px] text-ink-faint mt-0.5">Beklenmedik bir harcama oldu mu? Sağ üstteki + ile ekleyebilirsin.</p>
+      </div>`
     : m.extras.map(i => lineItemRow(i, 'extra', state)).join('');
 
   const personalSavingsRows = users.map(u => {
@@ -66,7 +74,7 @@ export function renderExpensesScreen(state) {
           </div>
           <div class="field flex items-center gap-1 px-3 py-2 w-32 shrink-0">
             <span class="text-ink-soft text-xs">${sym}</span>
-            <input type="number" step="0.01" min="0" data-role="personalSavingsAmount" data-user="${u.id}" value="${numOrEmpty(ps.amount)}" placeholder="0" class="w-full text-right text-sm text-ink">
+            <input type="text" inputmode="decimal" autocomplete="off" data-role="personalSavingsAmount" data-user="${u.id}" value="${numOrEmpty(ps.amount)}" placeholder="0" class="w-full text-right text-sm text-ink">
           </div>
         </div>
       </div>`;
@@ -79,7 +87,7 @@ export function renderExpensesScreen(state) {
           <label class="text-sm text-ink-soft">Harçlık</label>
           <div class="field flex items-center gap-1 px-3 py-2 w-32">
             <span class="text-ink-soft text-xs">${sym}</span>
-            <input type="number" step="0.01" min="0" data-role="allowance" data-user="${u.id}" value="${numOrEmpty(m.allowance[u.id])}" placeholder="0" class="w-full text-right text-sm text-ink">
+            <input type="text" inputmode="decimal" autocomplete="off" data-role="allowance" data-user="${u.id}" value="${numOrEmpty(m.allowance[u.id])}" placeholder="0" class="w-full text-right text-sm text-ink">
           </div>
         </div>
         <div class="flex items-center justify-between gap-3">
@@ -89,7 +97,7 @@ export function renderExpensesScreen(state) {
           </div>
           <div class="field flex items-center gap-1 px-3 py-2 w-32 shrink-0">
             <span class="text-ink-soft text-xs">${sym}</span>
-            <input type="number" step="0.01" data-role="personalNote" data-user="${u.id}" value="${numOrEmpty(m.personalNote[u.id])}" placeholder="0" class="w-full text-right text-sm text-ink">
+            <input type="text" inputmode="decimal" autocomplete="off" data-role="personalNote" data-user="${u.id}" value="${numOrEmpty(m.personalNote[u.id])}" placeholder="0" class="w-full text-right text-sm text-ink">
           </div>
         </div>
       </div>`).join('');
@@ -111,7 +119,7 @@ export function renderExpensesScreen(state) {
           </div>
           <div class="field flex items-center gap-1 px-3 py-2 w-32 shrink-0">
             <span class="text-ink-soft text-xs">${sym}</span>
-            <input type="number" step="0.01" min="0" data-role="extraIncome" value="${numOrEmpty(m.extraIncome)}" placeholder="0" class="w-full text-right text-sm text-ink">
+            <input type="text" inputmode="decimal" autocomplete="off" data-role="extraIncome" value="${numOrEmpty(m.extraIncome)}" placeholder="0" class="w-full text-right text-sm text-ink">
           </div>
         </div>
       </div>
@@ -158,7 +166,7 @@ export function renderExpensesScreen(state) {
         </div>
         <div class="field flex items-center gap-1 px-3 py-2 w-32 shrink-0">
           <span class="text-ink-soft text-xs">${sym}</span>
-          <input type="number" step="0.01" min="0" data-role="birikim" value="${numOrEmpty(m.birikim)}" placeholder="0" class="w-full text-right text-sm text-ink">
+          <input type="text" inputmode="decimal" autocomplete="off" data-role="birikim" value="${numOrEmpty(m.birikim)}" placeholder="0" class="w-full text-right text-sm text-ink">
         </div>
       </div>
       ${personalSavingsRows}
@@ -173,7 +181,7 @@ export function renderExpensesScreen(state) {
         </div>
         <div class="field flex items-center gap-1 px-3 py-2 w-32 shrink-0">
           <span class="text-ink-soft text-xs">${sym}</span>
-          <input type="number" step="0.01" min="0" data-role="pool" value="${numOrEmpty(m.pool)}" placeholder="0" class="w-full text-right text-sm text-ink">
+          <input type="text" inputmode="decimal" autocomplete="off" data-role="pool" value="${numOrEmpty(m.pool)}" placeholder="0" class="w-full text-right text-sm text-ink">
         </div>
       </div>
       <p class="text-[10px] text-ink-faint leading-snug mb-3 pb-3 border-b border-line">Ortak hesap aynı zamanda birikim hesabınız olduğu için buradan harcanan tutar aylık toplam varlığınızdan düşülür.</p>

@@ -29,3 +29,26 @@ export function escapeHtml(s) {
 export function numOrEmpty(n) {
   return (n === 0 || n === null || n === undefined || Number.isNaN(n)) ? '' : n;
 }
+
+// Tutar alanlarına "150+45" gibi basit aritmetik ifadeler yazılabilmesini
+// sağlar. Güvenlik için önce karakterler katı bir beyaz listeyle
+// doğrulanır (yalnızca rakam, nokta, virgül, boşluk ve + - * / ( ) izinli);
+// bu kontrolden geçmeyen hiçbir şey değerlendirilmez.
+const SAFE_EXPR = /^[0-9+\-*/(). ,]+$/;
+export function evalAmountExpression(raw) {
+  if (raw === null || raw === undefined) return 0;
+  const str = String(raw).trim();
+  if (str === '') return 0;
+  const normalized = str.replace(/,/g, '.');
+  if (!SAFE_EXPR.test(str) && !SAFE_EXPR.test(normalized)) {
+    const n = parseFloat(normalized);
+    return Number.isFinite(n) ? n : 0;
+  }
+  try {
+    // eslint-disable-next-line no-new-func
+    const result = Function('"use strict"; return (' + normalized + ')')();
+    return Number.isFinite(result) ? Math.round(result * 100) / 100 : 0;
+  } catch {
+    return 0;
+  }
+}

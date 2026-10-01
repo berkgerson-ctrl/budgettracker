@@ -9,7 +9,7 @@ function contributionRow(c, currency) {
       <span class="text-[11px] text-ink-faint flex-1 min-w-0">${formatDateTR(c.date)}</span>
       <div class="field flex items-center gap-1 px-2 py-1.5 w-24 shrink-0">
         <span class="text-ink-soft text-xs">${currencySymbol(currency)}</span>
-        <input type="number" step="0.01" min="0" data-role="goalContribAmount" data-id="${c.id}" value="${numOrEmpty(c.amount)}" placeholder="0" class="w-full text-right text-xs text-ink">
+        <input type="text" inputmode="decimal" autocomplete="off" data-role="goalContribAmount" data-id="${c.id}" value="${numOrEmpty(c.amount)}" placeholder="0" class="w-full text-right text-xs text-ink">
       </div>
       <button data-action="deleteGoalContribution" data-id="${c.id}" class="w-6 h-6 rounded-md bg-coral-tint text-coral flex items-center justify-center shrink-0" aria-label="Sil">
         <span class="w-3 h-3 inline-flex">${ICON.close}</span>
@@ -56,7 +56,7 @@ function goalCard(state, goal) {
         </button>
       </div>
       <div class="w-full h-2.5 rounded-full bg-app overflow-hidden mb-2">
-        <div class="h-full rounded-full" style="width:${pct}%; background:linear-gradient(90deg, var(--teal), var(--amber));"></div>
+        <div class="h-full rounded-full progress-fill" style="width:0%; background:linear-gradient(90deg, var(--teal), var(--amber));" data-target-width="${pct}%"></div>
       </div>
       <div class="flex items-center justify-between text-[11px] text-ink-soft mb-3">
         <span>%${pct} tamamlandı</span>
@@ -66,7 +66,7 @@ function goalCard(state, goal) {
       <div class="flex items-center gap-2">
         <div class="field flex items-center gap-1 px-3 py-2 flex-1">
           <span class="text-ink-soft text-xs">${currencySymbol(currency)}</span>
-          <input type="number" step="0.01" min="0" placeholder="Bu ay eklenecek tutar" data-role="goalContributionInput" data-id="${goal.id}" class="w-full text-sm text-ink">
+          <input type="text" inputmode="decimal" autocomplete="off" placeholder="Bu ay eklenecek tutar" data-role="goalContributionInput" data-id="${goal.id}" class="w-full text-sm text-ink">
         </div>
         <button data-action="addGoalContribution" data-id="${goal.id}" class="px-4 py-2 rounded-xl text-white text-xs font-semibold bg-teal shrink-0">Ekle</button>
       </div>
@@ -91,12 +91,12 @@ export function renderGoalsScreen(state) {
       </div>
       <div class="field flex items-center gap-1 px-3 py-2.5 mb-2.5">
         <span class="text-ink-soft text-sm">${sym}</span>
-        <input type="number" step="0.01" min="0" id="goalTarget" placeholder="Hedef tutar" class="w-full text-sm text-ink">
+        <input type="text" inputmode="decimal" autocomplete="off" id="goalTarget" placeholder="Hedef tutar" class="w-full text-sm text-ink">
       </div>
       <div class="grid grid-cols-2 gap-2 mb-1">
         <div class="field flex items-center gap-1 px-3 py-2.5">
           <span class="text-ink-soft text-sm">${sym}</span>
-          <input type="number" step="0.01" min="0" id="goalMonthly" placeholder="Aylık tutar" class="w-full text-sm text-ink">
+          <input type="text" inputmode="decimal" autocomplete="off" id="goalMonthly" placeholder="Aylık tutar" class="w-full text-sm text-ink">
         </div>
         <div class="field px-3 py-2.5">
           <input type="date" id="goalDate" class="w-full text-sm text-ink">
@@ -118,7 +118,13 @@ export function renderGoalsScreen(state) {
     </div>
     <div class="mt-4">
       ${form}
-      ${goals.length === 0 && !showForm ? `<p class="text-xs text-ink-faint italic text-center py-8">Henüz bir hedef eklemedin. Sağ üstteki + ile başla.</p>` : ''}
+      ${goals.length === 0 && !showForm ? `
+      <div class="text-center py-10">
+        <span class="empty-illustration inline-flex w-16 h-16 rounded-full items-center justify-center mb-3" style="background:var(--amber-tint); color:var(--amber);"><span class="w-8 h-8 inline-flex">${ICON.target}</span></span>
+        <p class="text-sm font-semibold text-ink">Henüz bir hedefin yok</p>
+        <p class="text-xs text-ink-faint mt-1 mb-4">Bir saat, tatil ya da hayalindeki eşya için birikime başla.</p>
+        <button data-action="toggleNewGoalForm" class="px-5 py-2.5 rounded-xl text-white text-xs font-semibold bg-teal">İlk Hedefini Oluştur</button>
+      </div>` : ''}
       <div class="space-y-3 mb-4">${goals.map(g => goalCard(state, g)).join('')}</div>
     </div>
   `;

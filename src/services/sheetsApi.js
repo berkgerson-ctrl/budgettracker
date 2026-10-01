@@ -35,6 +35,12 @@ async function callApi(url, action, payload = {}) {
   return data.result;
 }
 
+// Çevrimdışı kuyruktaki bekleyen işlemleri yeniden göndermek için kullanılan
+// genel amaçlı çağrı (action adı ve payload'u doğrudan dışarıdan verilir).
+export function rawCall(url, action, payload) {
+  return callApi(url, action, payload);
+}
+
 export function testConnection(url) {
   return callApi(url, 'ping');
 }

@@ -1,5 +1,5 @@
 import { Chart, registerables } from 'chart.js';
-import { monthTotals, categorySpendForMonth } from '../state.js';
+import { monthTotals, categorySpendForMonth, categoryLimitStatus } from '../state.js';
 import { monthLabel, monthShort } from '../utils/dates.js';
 import { formatCurrency } from '../utils/format.js';
 
@@ -26,7 +26,17 @@ export function renderChartScreen(state) {
   `;
 }
 
+function themeColors() {
+  const cs = getComputedStyle(document.documentElement);
+  return {
+    ink: cs.getPropertyValue('--ink').trim() || '#1C2430',
+    inkSoft: cs.getPropertyValue('--ink-soft').trim() || '#8891A0',
+    line: cs.getPropertyValue('--line').trim() || '#EBEDF3'
+  };
+}
+
 export function mountCharts(state) {
+  const tc = themeColors();
   const keys = Object.keys(state.months).sort();
   const labels = keys.map(k => monthShort(k));
   const incomeData = keys.map(k => monthTotals(state.months[k], state.users).totalIncome);
@@ -47,10 +57,10 @@ export function mountCharts(state) {
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 11 } } } },
+        plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 11 }, color: tc.inkSoft } } },
         scales: {
-          y: { beginAtZero: true, ticks: { font: { size: 10 } } },
-          x: { ticks: { font: { size: 10 } } }
+          y: { beginAtZero: true, ticks: { font: { size: 10 }, color: tc.inkSoft }, grid: { color: tc.line } },
+          x: { ticks: { font: { size: 10 }, color: tc.inkSoft }, grid: { display: false } }
         }
       }
     });
@@ -74,12 +84,24 @@ export function mountCharts(state) {
   const legend = document.getElementById('categoryLegend');
   if (legend) {
     legend.innerHTML = state.categories.map((c, i) => {
-      const over = c.limit && catValues[i] > c.limit;
+      const status = categoryLimitStatus(catValues[i], c.limit);
+      const amountColor = status?.level === 'over' ? 'text-coral' : status?.level === 'warn' ? 'text-amber' : 'text-ink';
+      const badge = status?.level === 'over'
+        ? `<span class="badge shrink-0" style="background:var(--coral-tint); color:var(--coral);">Aşıldı</span>`
+        : status?.level === 'warn'
+          ? `<span class="badge shrink-0" style="background:var(--amber-tint); color:var(--amber);">%${Math.round(status.pct)}</span>`
+          : '';
       return `
-      <div class="flex items-center justify-between text-xs">
-        <span class="flex items-center gap-2"><span class="w-2.5 h-2.5 rounded-full shrink-0" style="background:${c.color || '#8891A0'}"></span>${c.name}</span>
-        <span class="font-semibold ${over ? 'text-coral' : 'text-ink'}">${formatCurrency(catValues[i], state.settings.currency)}${c.limit ? ` / ${formatCurrency(c.limit, state.settings.currency)}` : ''}</span>
+      <div class="text-xs">
+        <div class="flex items-center justify-between">
+          <span class="flex items-center gap-2"><span class="w-2.5 h-2.5 rounded-full shrink-0" style="background:${c.color || '#8891A0'}"></span>${c.name} ${badge}</span>
+          <span class="font-semibold ${amountColor}">${formatCurrency(catValues[i], state.settings.currency)}${c.limit ? ` / ${formatCurrency(c.limit, state.settings.currency)}` : ''}</span>
+        </div>
+        ${c.limit ? `<div class="w-full h-1.5 rounded-full bg-app overflow-hidden mt-1"><div class="h-full rounded-full progress-fill" data-target-width="${Math.min(100, status.pct)}%" style="width:0%; background:${status.level === 'over' ? 'var(--coral)' : status.level === 'warn' ? 'var(--amber)' : 'var(--teal)'};"></div></div>` : ''}
       </div>`;
     }).join('') || `<p class="text-xs text-ink-faint italic">Henüz kategori eklenmedi.</p>`;
+    requestAnimationFrame(() => {
+      legend.querySelectorAll('.progress-fill[data-target-width]').forEach(el => { el.style.width = el.dataset.targetWidth; });
+    });
   }
 }
